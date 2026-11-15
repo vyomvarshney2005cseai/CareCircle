@@ -3,60 +3,87 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="CareCircle is an accessible, collaborative elderly medication and healthcare routine platform designed with WCAG 2.1 AA senior accessibility standards.">
+  <meta name="theme-color" content="#0284c7">
   <title>CareCircle - Collaborative Elderly Care & Medication Management</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%230284c7'/><circle cx='50' cy='50' r='26' fill='%23ffffff'/><circle cx='50' cy='50' r='14' fill='%230284c7'/></svg>">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
+<body data-text-size="md">
 
-  <!-- Senior Accessibility Bar -->
-  <aside class="senior-bar" aria-label="Accessibility options">
-    <span>Senior Accessibility: Large Text & High Contrast Available</span>
-    <button id="toggle-senior-mode" type="button">👓 Senior / High Contrast Mode</button>
+  <!-- Skip-to-content Link (WCAG 2.1 AA 2.4.1) -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Live Announcer for Screen Readers (ARIA live region) -->
+  <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+  <!-- Senior Accessibility Toolbar (Persistent across entire platform) -->
+  <aside class="senior-bar" aria-label="Senior Accessibility Controls">
+    <div class="senior-bar-left">
+      <span style="font-weight:700;">👓 Accessibility:</span>
+      <!-- Text Size Controls A / A+ / A++ -->
+      <div class="text-size-controls" role="group" aria-label="Text Size Adjustment">
+        <span style="font-size:0.9em; margin-right:4px;">Text:</span>
+        <button id="btn-text-size-md" class="btn-text-size active" data-size="md" type="button" aria-pressed="true" aria-label="Standard text size 20 pixels" title="Standard text size (20px)">A</button>
+        <button id="btn-text-size-lg" class="btn-text-size" data-size="lg" type="button" aria-pressed="false" aria-label="Large text size 24 pixels" title="Large text size (24px)">A+</button>
+        <button id="btn-text-size-xl" class="btn-text-size" data-size="xl" type="button" aria-pressed="false" aria-label="Extra large text size 28 pixels" title="Extra large text size (28px)">A++</button>
+      </div>
+    </div>
+    <div class="senior-bar-right">
+      <!-- High Contrast Toggle -->
+      <button id="toggle-high-contrast" class="senior-bar-btn" type="button" aria-pressed="false" aria-label="Toggle High Contrast Theme">
+        ⚡ High Contrast
+      </button>
+      <!-- Elder Mode Toggle -->
+      <button id="toggle-elder-mode" class="senior-bar-btn" type="button" aria-pressed="false" aria-label="Toggle Simplified Elder Mode">
+        👴 Elder Mode: Simplified
+      </button>
+    </div>
   </aside>
 
   <!-- Global Toast Alerts -->
   <div id="toast-notification" class="alert-banner hidden" role="status" aria-live="polite"></div>
 
   <!-- AUTH VIEW (When user is not logged in) -->
-  <main id="auth-view" class="container" style="max-width: 520px; margin-top: 40px;">
+  <div id="auth-view" class="container" style="max-width: 540px; margin-top: 36px;">
     <div class="card" style="text-align: center;">
       <div class="brand" style="justify-content: center; margin-bottom: 12px;">
-        <div class="brand-logo">⭕</div>
+        <div class="brand-logo" aria-hidden="true">⭕</div>
         <div>
-          <div class="brand-title">CareCircle</div>
+          <h1 class="brand-title" style="margin: 0; font-size: 1.6em;">CareCircle</h1>
           <div class="brand-tagline">Elder-Centred Collaborative Healthcare</div>
         </div>
       </div>
-      <p style="color:var(--text-muted); margin-bottom: 24px;">
-        Secure, collaborative medication and appointment management putting the elderly person at the center of decisions.
+      <p style="color:var(--text-muted); margin-bottom: 24px; font-size: 1.05em;">
+        Secure, collaborative medication and care management with the elderly individual always at the center of decisions.
       </p>
 
       <!-- Auth Switcher Buttons -->
-      <div style="display: flex; gap: 8px; margin-bottom: 24px;">
-        <button id="tab-btn-login" class="btn btn-primary" style="flex: 1;" type="button">Log In</button>
-        <button id="tab-btn-join" class="btn btn-secondary" style="flex: 1;" type="button">Join Circle</button>
-        <button id="tab-btn-register" class="btn btn-secondary" style="flex: 1;" type="button">New Elder</button>
+      <div style="display: flex; gap: 8px; margin-bottom: 24px;" role="tablist" aria-label="Authentication Options">
+        <button id="tab-btn-login" class="btn btn-primary" style="flex: 1;" type="button" role="tab" aria-selected="true" aria-controls="form-login">Log In</button>
+        <button id="tab-btn-join" class="btn btn-secondary" style="flex: 1;" type="button" role="tab" aria-selected="false" aria-controls="form-join">Join Circle</button>
+        <button id="tab-btn-register" class="btn btn-secondary" style="flex: 1;" type="button" role="tab" aria-selected="false" aria-controls="form-register">New Elder</button>
       </div>
 
       <!-- 1. Login Form -->
-      <form id="form-login">
+      <form id="form-login" role="tabpanel" aria-labelledby="tab-btn-login">
         <div class="form-group">
           <label class="form-label" for="login-profile-id">CareCircle Profile ID</label>
-          <input id="login-profile-id" class="form-control" type="text" placeholder="e.g. 550e8400-e29b-..." required>
+          <input id="login-profile-id" class="form-control" type="text" placeholder="e.g. 550e8400-e29b-..." required autocomplete="username">
         </div>
         <div class="form-group">
           <label class="form-label" for="login-email">Your Email Address</label>
-          <input id="login-email" class="form-control" type="email" placeholder="name@domain.com" required>
+          <input id="login-email" class="form-control" type="email" placeholder="name@domain.com" required autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label" for="login-passcode">Personal Passcode</label>
-          <input id="login-passcode" class="form-control" type="password" placeholder="••••••••" required>
+          <input id="login-passcode" class="form-control" type="password" placeholder="••••••••" required autocomplete="current-password">
         </div>
         <button class="btn btn-primary btn-lg" style="width: 100%;" type="submit">Sign In to CareCircle</button>
       </form>
 
       <!-- 2. Join via Invite Form -->
-      <form id="form-join" class="hidden">
+      <form id="form-join" class="hidden" role="tabpanel" aria-labelledby="tab-btn-join">
         <div class="form-group">
           <label class="form-label" for="join-profile-id">CareCircle Profile ID</label>
           <input id="join-profile-id" class="form-control" type="text" placeholder="Provided by the elder" required>
@@ -67,84 +94,96 @@
         </div>
         <div class="form-group">
           <label class="form-label" for="join-name">Your Full Name</label>
-          <input id="join-name" class="form-control" type="text" placeholder="Nurse Joy / Bob" required>
+          <input id="join-name" class="form-control" type="text" placeholder="Nurse Joy / Bob" required autocomplete="name">
         </div>
         <div class="form-group">
           <label class="form-label" for="join-email">Your Email</label>
-          <input id="join-email" class="form-control" type="email" placeholder="nurse@example.com" required>
+          <input id="join-email" class="form-control" type="email" placeholder="nurse@example.com" required autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label" for="join-passcode">Set Your Personal Passcode (6+ chars)</label>
-          <input id="join-passcode" class="form-control" type="password" placeholder="••••••••" minlength="6" required>
+          <input id="join-passcode" class="form-control" type="password" placeholder="••••••••" minlength="6" required autocomplete="new-password">
         </div>
         <button class="btn btn-success btn-lg" style="width: 100%;" type="submit">Join CareCircle</button>
       </form>
 
       <!-- 3. Register Elder Form -->
-      <form id="form-register" class="hidden">
+      <form id="form-register" class="hidden" role="tabpanel" aria-labelledby="tab-btn-register">
         <div class="form-group">
           <label class="form-label" for="reg-elder-name">Elder's Full Name</label>
-          <input id="reg-elder-name" class="form-control" type="text" placeholder="Grandma Martha" required>
+          <input id="reg-elder-name" class="form-control" type="text" placeholder="Grandma Martha" required autocomplete="name">
         </div>
         <div class="form-group">
           <label class="form-label" for="reg-elder-email">Elder's Email</label>
-          <input id="reg-elder-email" class="form-control" type="email" placeholder="martha@example.com" required>
+          <input id="reg-elder-email" class="form-control" type="email" placeholder="martha@example.com" required autocomplete="email">
         </div>
         <div class="form-group">
           <label class="form-label" for="reg-passcode">Elder Passcode (6+ chars)</label>
-          <input id="reg-passcode" class="form-control" type="password" placeholder="••••••••" minlength="6" required>
+          <input id="reg-passcode" class="form-control" type="password" placeholder="••••••••" minlength="6" required autocomplete="new-password">
         </div>
         <button class="btn btn-primary btn-lg" style="width: 100%;" type="submit">Create Elder CareCircle</button>
       </form>
     </div>
-  </main>
+  </div>
 
   <!-- APP VIEW (When Authenticated) -->
   <div id="app-view" class="hidden">
-    <!-- Header -->
-    <header class="app-header">
+    <!-- Header Landmark -->
+    <header class="app-header" role="banner">
       <div class="brand">
-        <div class="brand-logo">⭕</div>
+        <div class="brand-logo" aria-hidden="true">⭕</div>
         <div>
-          <div class="brand-title"><span id="header-elder-name">Elder</span>'s CareCircle</div>
-          <div class="brand-tagline"><span id="header-profile-id">Circle ID</span></div>
+          <h1 class="brand-title"><span id="header-elder-name">Elder</span>'s CareCircle</h1>
+          <div class="brand-tagline">Circle ID: <span id="header-profile-id">Loading...</span></div>
         </div>
       </div>
       <div class="header-user-section">
-        <button id="btn-read-aloud" class="btn btn-secondary" type="button" title="Read schedule aloud with Web Speech">
+        <button id="btn-read-aloud" class="btn btn-secondary" type="button" aria-label="Read today's medication schedule out loud using speech synthesis">
           🔊 Read Schedule Aloud
         </button>
-        <span id="header-user-badge" class="user-badge">User (Role)</span>
-        <button id="btn-logout" class="btn btn-secondary" type="button">Log Out</button>
+        <button id="header-btn-test-reminder" class="btn btn-primary" type="button" aria-label="Send test reminder email to verify email alerts">
+          🔔 Send Test Reminder
+        </button>
+        <span id="header-user-badge" class="user-badge" aria-label="Current user account role">User (Role)</span>
+        <button id="btn-logout" class="btn btn-secondary" type="button" aria-label="Log out of CareCircle">Log Out</button>
       </div>
     </header>
 
-    <!-- Navigation Tabs -->
-    <nav class="app-nav" aria-label="Main Navigation">
-      <button class="nav-tab active" data-tab="today" type="button">📅 Today's Schedule</button>
-      <button class="nav-tab" data-tab="meds" type="button">💊 Medications</button>
-      <button class="nav-tab" data-tab="appointments" type="button">🩺 Appointments</button>
-      <button class="nav-tab" data-tab="family" type="button">👨‍👩‍👧‍👦 Family & Access</button>
-      <button class="nav-tab" data-tab="audit" type="button">📜 Activity Log</button>
+    <!-- Navigation Tabs Landmark -->
+    <nav class="app-nav" aria-label="Main Navigation" role="tablist">
+      <button class="nav-tab active" data-tab="today" id="tab-btn-today" role="tab" aria-selected="true" aria-controls="tab-today" type="button">📅 Today's Schedule</button>
+      <button class="nav-tab" data-tab="meds" id="tab-btn-meds" role="tab" aria-selected="false" aria-controls="tab-meds" type="button">💊 Medications</button>
+      <button class="nav-tab" data-tab="appointments" id="tab-btn-appointments" role="tab" aria-selected="false" aria-controls="tab-appointments" type="button">🩺 Appointments</button>
+      <button class="nav-tab" data-tab="family" id="tab-btn-family" role="tab" aria-selected="false" aria-controls="tab-family" type="button">👨‍👩‍👧‍👦 Family & Access</button>
+      <button class="nav-tab" data-tab="notifications" id="tab-btn-notifications" role="tab" aria-selected="false" aria-controls="tab-notifications" type="button">🔔 Reminders</button>
+      <button class="nav-tab" data-tab="audit" id="tab-btn-audit" role="tab" aria-selected="false" aria-controls="tab-audit" type="button">📜 Activity Log</button>
     </nav>
 
-    <!-- Main Content Area -->
-    <main class="container">
+    <!-- Main Content Landmark -->
+    <main id="main-content" class="container" tabindex="-1">
+
+      <!-- Elder Mode Notification Banner -->
+      <div id="elder-mode-banner" class="elder-mode-banner hidden" role="region" aria-label="Simplified Elder Mode Active">
+        <div>
+          <strong>👴 Simplified Elder View Active:</strong> Showing only today's doses with large buttons.
+        </div>
+        <button id="btn-exit-elder-mode" class="btn btn-secondary btn-sm" type="button">Switch to Full Caretaker View</button>
+      </div>
 
       <!-- TAB 1: TODAY'S SCHEDULE -->
-      <section id="tab-today" class="tab-content">
+      <section id="tab-today" class="tab-content" role="tabpanel" aria-labelledby="tab-btn-today">
 
         <!-- Pending Approvals Banner (Elder Only) -->
-        <div id="pending-approvals-banner" class="alert-banner alert-warning hidden">
+        <div id="pending-approvals-banner" class="alert-banner alert-warning hidden" role="region" aria-label="Changes awaiting elder approval">
           <div style="width: 100%;">
-            <h3 style="margin-bottom: 8px;">⚠️ Changes Awaiting Your Approval</h3>
-            <p style="margin-bottom: 12px; font-size:0.95em;">Caretakers or family members have proposed updates that require your authorization.</p>
+            <h2 style="margin-bottom: 8px; font-size:1.25em;">⚠️ Changes Awaiting Your Approval</h2>
+            <p style="margin-bottom: 12px; font-size:1em;">Caretakers or family members have proposed updates that require your authorization.</p>
             <div id="pending-approvals-list"></div>
           </div>
         </div>
 
         <!-- Next Appointment Banner -->
-        <div id="next-appointment-banner" class="alert-banner alert-info hidden">
+        <div id="next-appointment-banner" class="alert-banner alert-info hidden" role="region" aria-label="Upcoming doctor appointment">
           <div>
             <strong>🩺 Upcoming Doctor Appointment:</strong>
             <span id="next-appt-text">Loading...</span>
@@ -152,7 +191,7 @@
         </div>
 
         <!-- Adherence Quick Stats -->
-        <div class="adherence-grid">
+        <div class="adherence-grid" role="region" aria-label="Medication Adherence Statistics">
           <div class="stat-box">
             <div id="adherence-7d-val" class="stat-value">--%</div>
             <div class="stat-label">7-Day Adherence Rate</div>
@@ -163,25 +202,39 @@
           </div>
         </div>
 
+        <!-- AI Care Insight Card -->
+        <div id="ai-insight-box" class="ai-insight-card hidden" role="region" aria-label="AI Care Adherence Insight">
+          <div class="ai-insight-header">
+            <span aria-hidden="true">🤖</span>
+            <span>CareCircle AI Routine Insight</span>
+          </div>
+          <div id="ai-insight-text" class="ai-insight-body">Analyzing routine patterns...</div>
+          <div id="ai-insight-tip" class="ai-insight-tip"></div>
+        </div>
+
         <div class="card-title">
           <h2>Today's Medication Doses</h2>
-          <span style="font-size:0.9em; color:var(--text-muted);">Tap "I Took It" once dose is taken</span>
+          <span style="font-size:0.95em; color:var(--text-muted);">Tap "I Took It" once dose is taken</span>
         </div>
 
         <div id="today-empty-state" class="card hidden" style="text-align: center; padding: 40px;">
-          <p style="font-size: 1.2em; color: var(--text-muted);">No medication doses scheduled for today!</p>
+          <p style="font-size: 1.25em; color: var(--text-muted);">No medication doses scheduled for today!</p>
         </div>
 
-        <div id="today-doses-list">
-          <!-- Populated dynamically with big dose cards -->
+        <div id="today-doses-list" role="feed" aria-label="Today's scheduled medication doses">
+          <!-- Populated dynamically with accessible big dose cards -->
         </div>
       </section>
 
       <!-- TAB 2: MEDICATIONS -->
-      <section id="tab-meds" class="tab-content hidden">
-        <div class="flex-between" style="margin-bottom: 20px;">
+      <section id="tab-meds" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-btn-meds">
+        <div class="flex-between" style="margin-bottom: 20px; flex-wrap:wrap; gap:12px;">
           <h2>Medication Inventory & Routine</h2>
-          <button id="btn-open-add-med" class="btn btn-primary" type="button">+ Add Medication</button>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button id="btn-open-safety-check" class="btn btn-secondary" type="button" aria-label="Run AI drug interaction and safety cross-check">🛡️ Safety & Interactions</button>
+            <button id="btn-open-scan-prescription" class="btn btn-secondary" type="button" aria-label="Scan doctor prescription image with AI">📷 Scan Prescription</button>
+            <button id="btn-open-add-med" class="btn btn-primary" type="button" aria-label="Add new medication manually">+ Add Medication</button>
+          </div>
         </div>
         <div id="medications-list">
           <!-- Populated dynamically -->
@@ -189,10 +242,10 @@
       </section>
 
       <!-- TAB 3: APPOINTMENTS -->
-      <section id="tab-appointments" class="tab-content hidden">
+      <section id="tab-appointments" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-btn-appointments">
         <div class="flex-between" style="margin-bottom: 20px;">
           <h2>Doctor Appointments</h2>
-          <button id="btn-open-add-appt" class="btn btn-primary" type="button">+ Book Appointment</button>
+          <button id="btn-open-add-appt" class="btn btn-primary" type="button" aria-label="Book doctor appointment">+ Book Appointment</button>
         </div>
         <div id="appointments-list">
           <!-- Populated dynamically -->
@@ -200,7 +253,7 @@
       </section>
 
       <!-- TAB 4: FAMILY & ACCESS -->
-      <section id="tab-family" class="tab-content hidden">
+      <section id="tab-family" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-btn-family">
         <!-- Elder Settings Panel -->
         <div id="elder-settings-panel" class="card hidden" style="border-left: 8px solid var(--warning);">
           <h3>Elder-Centred Security Controls</h3>
@@ -215,18 +268,36 @@
 
         <div class="flex-between" style="margin-bottom: 20px;">
           <h2>CareCircle Members & Invitations</h2>
-          <button id="btn-open-invite" class="btn btn-primary" type="button">+ Invite Caretaker / Family</button>
+          <button id="btn-open-invite" class="btn btn-primary" type="button" aria-label="Generate new member invitation code">+ Invite Caretaker / Family</button>
         </div>
         <div id="members-list">
           <!-- Populated dynamically -->
         </div>
       </section>
 
-      <!-- TAB 5: ACTIVITY LOG -->
-      <section id="tab-audit" class="tab-content hidden">
+      <!-- TAB 5: NOTIFICATIONS & REMINDERS -->
+      <section id="tab-notifications" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-btn-notifications">
+        <div class="flex-between" style="margin-bottom: 20px; flex-wrap:wrap; gap:12px;">
+          <div>
+            <h2>Proactive Reminders & History</h2>
+            <p style="color:var(--text-muted); font-size:0.95em;">
+              Automated high-contrast email reminders for upcoming doses, missed medications, escalations, and appointments.
+            </p>
+          </div>
+          <button id="btn-send-test-reminder" class="btn btn-primary" type="button" aria-label="Dispatch test reminder email">🔔 Send Test Reminder</button>
+        </div>
+        <div class="card" style="padding: 0;">
+          <ul id="notifications-list" class="audit-list">
+            <!-- Populated dynamically -->
+          </ul>
+        </div>
+      </section>
+
+      <!-- TAB 6: ACTIVITY LOG -->
+      <section id="tab-audit" class="tab-content hidden" role="tabpanel" aria-labelledby="tab-btn-audit">
         <div class="card-title">
           <h2>Audit & Activity Trail</h2>
-          <span style="font-size: 0.9em; color: var(--text-muted);">Immutable record of all actions taken in this CareCircle</span>
+          <span style="font-size: 0.95em; color: var(--text-muted);">Immutable record of all actions taken in this CareCircle</span>
         </div>
         <div class="card" style="padding: 0;">
           <ul id="audit-logs-list" class="audit-list">
@@ -239,11 +310,11 @@
   </div>
 
   <!-- MODAL 1: ADD MEDICATION -->
-  <div id="modal-add-med" class="modal-overlay hidden">
+  <div id="modal-add-med" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-add-med-title" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Add New Medication</h3>
-        <button class="close-btn" data-close="modal-add-med">&times;</button>
+        <h3 id="modal-add-med-title">Add New Medication</h3>
+        <button class="close-btn" data-close="modal-add-med" type="button" aria-label="Close add medication dialog">&times;</button>
       </div>
       <form id="form-add-med">
         <div class="form-group">
@@ -270,27 +341,27 @@
           <input id="med-instructions" class="form-control" type="text" placeholder="e.g. Take with water after breakfast" required>
         </div>
         <div class="form-group">
-          <label class="form-label" for="med-times">Times (comma separated, HH:mm)</label>
+          <label class="form-label" for="med-times">Times (comma separated, 24-hour format HH:mm)</label>
           <input id="med-times" class="form-control" type="text" placeholder="08:00, 20:00" required>
         </div>
         <div class="form-group">
-          <label class="form-label">Days of Week</label>
+          <span class="form-label">Days of Week</span>
           <div style="display:flex; flex-wrap:wrap; gap:12px; margin-top:6px;">
-            <label><input type="checkbox" name="dow" value="0" checked> Sun</label>
-            <label><input type="checkbox" name="dow" value="1" checked> Mon</label>
-            <label><input type="checkbox" name="dow" value="2" checked> Tue</label>
-            <label><input type="checkbox" name="dow" value="3" checked> Wed</label>
-            <label><input type="checkbox" name="dow" value="4" checked> Thu</label>
-            <label><input type="checkbox" name="dow" value="5" checked> Fri</label>
-            <label><input type="checkbox" name="dow" value="6" checked> Sat</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="0" checked> Sun</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="1" checked> Mon</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="2" checked> Tue</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="3" checked> Wed</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="4" checked> Thu</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="5" checked> Fri</label>
+            <label class="checkbox-group"><input type="checkbox" name="dow" value="6" checked> Sat</label>
           </div>
         </div>
-        <div style="display:flex; gap:16px;">
-          <div class="form-group" style="flex:1;">
+        <div style="display:flex; gap:16px; flex-wrap:wrap;">
+          <div class="form-group" style="flex:1; min-width: 160px;">
             <label class="form-label" for="med-stock">Current Stock Count</label>
             <input id="med-stock" class="form-control" type="number" min="0" value="30" required>
           </div>
-          <div class="form-group" style="flex:1;">
+          <div class="form-group" style="flex:1; min-width: 160px;">
             <label class="form-label" for="med-threshold">Refill Alert At</label>
             <input id="med-threshold" class="form-control" type="number" min="0" value="5" required>
           </div>
@@ -301,11 +372,11 @@
   </div>
 
   <!-- MODAL 2: ADD APPOINTMENT -->
-  <div id="modal-add-appt" class="modal-overlay hidden">
+  <div id="modal-add-appt" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-add-appt-title" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Book Doctor Appointment</h3>
-        <button class="close-btn" data-close="modal-add-appt">&times;</button>
+        <h3 id="modal-add-appt-title">Book Doctor Appointment</h3>
+        <button class="close-btn" data-close="modal-add-appt" type="button" aria-label="Close book appointment dialog">&times;</button>
       </div>
       <form id="form-add-appt">
         <div class="form-group">
@@ -334,11 +405,11 @@
   </div>
 
   <!-- MODAL 3: CREATE INVITE -->
-  <div id="modal-create-invite" class="modal-overlay hidden">
+  <div id="modal-create-invite" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-create-invite-title" hidden>
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Generate CareCircle Invite Code</h3>
-        <button class="close-btn" data-close="modal-create-invite">&times;</button>
+        <h3 id="modal-create-invite-title">Generate CareCircle Invite Code</h3>
+        <button class="close-btn" data-close="modal-create-invite" type="button" aria-label="Close invite creation dialog">&times;</button>
       </div>
       <form id="form-create-invite">
         <div class="form-group">
@@ -349,7 +420,7 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label">Permissions to Grant</label>
+          <span class="form-label">Permissions to Grant</span>
           <label class="checkbox-group" style="margin-bottom:8px;">
             <input type="checkbox" id="perm-view-meds" checked disabled> Can view medication routine
           </label>
@@ -368,24 +439,129 @@
     </div>
   </div>
 
-  <!-- MODAL 4: INVITE PASSCODE RESULT (Shown ONCE) -->
-  <div id="modal-invite-result" class="modal-overlay hidden">
+  <!-- MODAL 4: INVITE PASSCODE RESULT -->
+  <div id="modal-invite-result" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-invite-result-title" hidden>
     <div class="modal-card" style="text-align: center;">
       <div class="modal-header">
-        <h3>Share This Invite Passcode</h3>
-        <button class="close-btn" data-close="modal-invite-result">&times;</button>
+        <h3 id="modal-invite-result-title">Share This Invite Passcode</h3>
+        <button class="close-btn" data-close="modal-invite-result" type="button" aria-label="Close invite result dialog">&times;</button>
       </div>
       <p style="color:var(--text-muted); margin-bottom: 16px;">
         This 8-character passcode is shown <strong>only once</strong> for security. Give this code and your Profile ID to the caretaker or family member.
       </p>
       <div style="background-color:var(--bg-subtle); padding: 18px; border-radius: 12px; margin-bottom: 16px;">
-        <div style="font-size:0.85em; color:var(--text-muted); margin-bottom:4px;">CareCircle Profile ID</div>
-        <code id="invite-result-profile-id" style="font-size:1.1em; font-weight:bold; color:var(--text-main); word-break: break-all;"></code>
+        <div style="font-size:0.9em; color:var(--text-muted); margin-bottom:4px;">CareCircle Profile ID</div>
+        <code id="invite-result-profile-id" style="font-size:1.15em; font-weight:bold; color:var(--text-main); word-break: break-all;"></code>
         <hr style="margin: 12px 0; border: none; border-top: 1px dashed var(--border);">
-        <div style="font-size:0.85em; color:var(--text-muted); margin-bottom:4px;">One-Time Invite Passcode</div>
-        <div id="invite-result-code" style="font-size: 2.2em; font-weight: 800; letter-spacing: 4px; color: var(--primary);"></div>
+        <div style="font-size:0.9em; color:var(--text-muted); margin-bottom:4px;">One-Time Invite Passcode</div>
+        <div id="invite-result-code" style="font-size: 2.4em; font-weight: 800; letter-spacing: 4px; color: var(--primary);"></div>
       </div>
       <button id="btn-copy-invite" class="btn btn-success btn-lg" style="width:100%;" type="button">Copy Invite Details</button>
+    </div>
+  </div>
+
+  <!-- MODAL 5: SCAN PRESCRIPTION (Gemini Multimodal AI) -->
+  <div id="modal-scan-prescription" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-scan-prescription-title" hidden>
+    <div class="modal-card" style="max-width: 850px; width: 95%;">
+      <div class="modal-header">
+        <h3 id="modal-scan-prescription-title">📷 Scan Prescription with Gemini Multimodal AI</h3>
+        <button class="close-btn" data-close="modal-scan-prescription" type="button" aria-label="Close scan prescription dialog">&times;</button>
+      </div>
+      <p style="color:var(--text-muted); font-size:1em; margin-bottom:16px;">
+        Upload a prescription photo or paper slip (JPEG, PNG, or WebP up to 5MB). Gemini Multimodal AI will extract medications into a draft table for review. <strong>Nothing is added to your circle until you verify and confirm.</strong>
+      </p>
+
+      <div id="scan-dropzone" class="scan-dropzone" tabindex="0" role="button" aria-label="Click or drop prescription photo here">
+        <div style="font-size: 2.4em; margin-bottom: 8px;" aria-hidden="true">📄</div>
+        <strong>Click or tap here to upload prescription photo</strong>
+        <div style="font-size:0.9em; color:var(--text-muted); margin-top:4px;">JPEG, PNG, or WebP (Max 5MB)</div>
+        <input type="file" id="prescription-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;" aria-label="Upload prescription image file">
+      </div>
+
+      <div id="scan-loading" class="hidden" style="text-align:center; padding: 24px;" aria-live="polite">
+        <div style="font-size: 2.2em; margin-bottom: 8px;" aria-hidden="true">⏳</div>
+        <p><strong>Gemini AI is scanning and analyzing your prescription...</strong></p>
+        <p style="font-size:0.95em; color:var(--text-muted);">Extracting medication names, dosage strength, frequencies, and instructions.</p>
+      </div>
+
+      <div id="scan-review-container" class="hidden" aria-live="polite">
+        <h4 style="margin-bottom:8px;">Draft Extracted Medications (Editable Review Table):</h4>
+        <div style="overflow-x: auto;">
+          <table class="scan-table" id="scan-draft-table" aria-label="Draft medications extracted from prescription">
+            <thead>
+              <tr>
+                <th scope="col" style="min-width: 140px;">Medicine Name</th>
+                <th scope="col" style="min-width: 90px;">Dosage</th>
+                <th scope="col" style="min-width: 90px;">Form</th>
+                <th scope="col" style="min-width: 110px;">Times (HH:mm)</th>
+                <th scope="col" style="min-width: 160px;">Instructions</th>
+                <th scope="col" style="width: 70px; text-align: center;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="scan-draft-tbody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+        <div id="scan-notes" style="margin-top:12px; font-size:0.95em; color:var(--text-muted); font-style:italic;"></div>
+        <button id="btn-save-scanned-meds" class="btn btn-primary btn-lg" style="width:100%; margin-top:18px;" type="button">
+          ✅ Confirm & Add Approved Medications
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 6: SAFETY & DRUG INTERACTION CHECK -->
+  <div id="modal-safety-check" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modal-safety-check-title" hidden>
+    <div class="modal-card" style="max-width: 700px; width: 95%;">
+      <div class="modal-header">
+        <h3 id="modal-safety-check-title">🛡️ Medication Safety & Interaction Check</h3>
+        <button class="close-btn" data-close="modal-safety-check" type="button" aria-label="Close safety check dialog">&times;</button>
+      </div>
+      <div id="safety-loading" style="text-align:center; padding:24px;" aria-live="polite">
+        <div style="font-size: 2.2em; margin-bottom: 8px;" aria-hidden="true">🔬</div>
+        <p>Analyzing active medications with Gemini for drug interactions, duplicate therapies, and timing conflicts...</p>
+      </div>
+      <div id="safety-result" class="hidden" aria-live="polite">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; background:var(--bg-subtle); padding:12px 16px; border-radius:8px;">
+          <span style="font-weight:700;">Risk Severity:</span>
+          <span id="safety-badge" class="safety-badge none">None</span>
+        </div>
+        <p id="safety-summary" style="font-size:1.1em; margin-bottom:16px; font-weight:600; line-height:1.5;"></p>
+        <div id="safety-findings-list">
+          <!-- Populated dynamically -->
+        </div>
+        <div class="safety-disclaimer-box" role="note">
+          ⚠️ <strong>Medical Disclaimer:</strong> This safety evaluation is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING AI VOICE & NATURAL-LANGUAGE ASSISTANT DOCK -->
+  <div class="ai-chat-dock" role="region" aria-label="CareCircle Voice and AI Assistant">
+    <button id="btn-toggle-ai-chat" class="ai-chat-toggle-btn" type="button" aria-expanded="false" aria-controls="ai-chat-panel">
+      <span aria-hidden="true">💬</span> <span>Voice & AI Assistant</span>
+    </button>
+    <div id="ai-chat-panel" class="ai-chat-panel hidden" role="dialog" aria-label="Conversational AI Assistant" hidden>
+      <div class="ai-chat-header">
+        <span>🤖 CareCircle Assistant</span>
+        <button id="btn-close-ai-chat" type="button" aria-label="Close AI Assistant">&times;</button>
+      </div>
+      <div id="ai-chat-messages" class="ai-chat-messages" role="log" aria-live="polite">
+        <div class="ai-bubble assistant">
+          Hello! I am your CareCircle AI Assistant. You can speak or type to:
+          <br>• "What's due today?"
+          <br>• "I took my morning Metformin"
+          <br>• "Add appointment with Dr. Sharma next Tuesday 5pm"
+          <br>• "How was my week?"
+        </div>
+      </div>
+      <form id="ai-chat-form" class="ai-chat-input-bar">
+        <button id="ai-mic-btn" class="ai-mic-btn" type="button" aria-label="Speak to assistant using microphone" title="Speak to assistant">🎤</button>
+        <input id="ai-chat-input" type="text" placeholder="Type or speak a message..." autocomplete="off" aria-label="Ask assistant a question">
+        <button type="submit" class="ai-send-btn" aria-label="Send message to assistant">Send</button>
+      </form>
     </div>
   </div>
 

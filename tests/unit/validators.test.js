@@ -1,8 +1,6 @@
 const {
   registerElderSchema,
-  loginSchema,
   medicationSchema,
-  appointmentSchema,
   doseActionSchema
 } = require('../../src/utils/validators');
 

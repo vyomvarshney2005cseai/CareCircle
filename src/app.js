@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
+const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const pinoHttp = require('pino-http');
 const config = require('./config');
@@ -9,6 +10,7 @@ const logger = require('./utils/logger');
 const { apiLimiter } = require('./middlewares/rateLimiter');
 const errorHandler = require('./middlewares/errorHandler');
 const apiRouter = require('./routes/apiRouter');
+const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 
@@ -55,6 +57,9 @@ app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 app.use(cookieParser(config.cookieSecret));
 
+// Gzip compression for all outgoing HTTP responses
+app.use(compression());
+
 // Health check endpoint (for Cloud Run & Docker)
 app.get('/healthz', (req, res) => {
   res.status(200).json({
@@ -66,16 +71,24 @@ app.get('/healthz', (req, res) => {
   });
 });
 
+// Cloud Scheduler task triggers
+app.use('/tasks', taskRoutes);
+
 // REST API with rate limiting
 app.use('/api', apiLimiter, apiRouter);
 
-// Static frontend from /public
+// Static frontend from /public with HTTP caching headers
 const publicDir = path.join(__dirname, '..', 'public');
-app.use(express.static(publicDir));
+app.use(
+  express.static(publicDir, {
+    maxAge: config.env === 'production' ? '1d' : 0,
+    etag: true
+  })
+);
 
 // Fallback to index.html for SPA routing on non-API routes
 app.get('*', (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') || req.path.startsWith('/tasks')) {
     return next();
   }
   return res.sendFile(path.join(publicDir, 'index.html'));

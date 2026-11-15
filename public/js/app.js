@@ -19,7 +19,9 @@ window.app = {
       this.loadAppointments(profileId),
       this.loadMembers(profileId),
       this.loadPendingChanges(profileId),
-      this.loadAuditLogs(profileId)
+      this.loadAuditLogs(profileId),
+      this.loadNotifications(profileId),
+      this.loadAdherenceInsight(profileId)
     ]);
   },
 
@@ -50,30 +52,47 @@ window.app = {
     schedule.doses.forEach((dose) => {
       const card = document.createElement('article');
       card.className = `dose-card status-${dose.status}`;
-      card.setAttribute('aria-label', `Dose ${dose.medicationName} scheduled for ${dose.scheduledTime}`);
+      const safeMedName = ui.escapeHtml(dose.medicationName);
+      const safeTime = ui.escapeHtml(dose.scheduledTime);
+      const safeDosage = ui.escapeHtml(dose.dosage);
+      const safeForm = ui.escapeHtml(dose.form);
+      const safeInstructions = ui.escapeHtml(dose.instructions);
+
+      card.setAttribute('aria-label', `Dose ${safeMedName} scheduled for ${safeTime}`);
 
       const isTaken = dose.status === 'taken';
 
+      let statusBadge = '';
+      if (dose.status === 'taken') {
+        statusBadge = '<span class="badge badge-taken" aria-label="Status: Taken">✓ TAKEN</span>';
+      } else if (dose.status === 'missed') {
+        statusBadge = '<span class="badge badge-missed" aria-label="Status: Missed">⚠️ MISSED</span>';
+      } else if (dose.status === 'snoozed') {
+        statusBadge = '<span class="badge badge-snoozed" aria-label="Status: Snoozed">🕒 SNOOZED</span>';
+      } else {
+        statusBadge = '<span class="badge badge-pending" aria-label="Status: Due">⏳ DUE / SCHEDULED</span>';
+      }
+
       card.innerHTML = `
         <div class="dose-header">
-          <div class="dose-time">⏰ ${dose.scheduledTime}</div>
+          <div class="dose-time"><span aria-hidden="true">⏰</span> ${safeTime}</div>
           <div>
-            <span class="badge badge-${dose.status}">${dose.status.toUpperCase()}</span>
-            ${dose.isLowStock ? '<span class="badge badge-low-stock">⚠️ LOW STOCK (' + dose.stockCount + ' left)</span>' : ''}
+            ${statusBadge}
+            ${dose.isLowStock ? '<span class="badge badge-low-stock" aria-label="Low stock warning">📦 LOW STOCK (' + Number(dose.stockCount) + ' left)</span>' : ''}
           </div>
         </div>
-        <div class="dose-med-name">${dose.medicationName}</div>
-        <div class="dose-dosage-form">${dose.dosage} • ${dose.form} (Stock: ${dose.stockCount})</div>
-        <div class="dose-instructions">💡 Instructions: ${dose.instructions}</div>
+        <div class="dose-med-name">${safeMedName}</div>
+        <div class="dose-dosage-form">${safeDosage} • ${safeForm} (Stock remaining: ${Number(dose.stockCount)})</div>
+        <div class="dose-instructions">💡 Instructions: ${safeInstructions}</div>
 
-        <button type="button" class="btn btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled' : ''}>
-          ${isTaken ? '✓ Taken at ' + new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '✓ I TOOK IT'}
+        <button type="button" class="btn btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled aria-disabled="true"' : ''} aria-label="${isTaken ? 'Dose already recorded as taken' : 'Confirm taking ' + safeMedName}">
+          ${isTaken ? '✓ Taken at ' + new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '✓ I TOOK THIS MEDICINE'}
         </button>
 
         ${!isTaken ? `
           <div class="dose-actions-row">
-            <button type="button" class="btn btn-secondary action-skip" data-dose-id="${dose.id}">Skip Dose</button>
-            <button type="button" class="btn btn-secondary action-snooze" data-dose-id="${dose.id}">Snooze 30m</button>
+            <button type="button" class="btn btn-secondary action-skip" data-dose-id="${dose.id}" aria-label="Skip dose for ${safeMedName}">Skip Dose</button>
+            <button type="button" class="btn btn-secondary action-snooze" data-dose-id="${dose.id}" aria-label="Snooze reminder for 30 minutes">Snooze 30m</button>
           </div>
         ` : ''}
       `;
@@ -81,27 +100,35 @@ window.app = {
       // Event handlers
       const takeBtn = card.querySelector('.btn-huge-take');
       if (takeBtn && !isTaken) {
-        takeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'taken'));
+        takeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'taken', dose.medicationName));
       }
 
       const skipBtn = card.querySelector('.action-skip');
       if (skipBtn) {
-        skipBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'skipped'));
+        skipBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'skipped', dose.medicationName));
       }
 
       const snoozeBtn = card.querySelector('.action-snooze');
       if (snoozeBtn) {
-        snoozeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'snoozed'));
+        snoozeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'snoozed', dose.medicationName));
       }
 
       listEl.appendChild(card);
     });
   },
 
-  async handleDoseAction(doseId, status) {
+  async handleDoseAction(doseId, status, medName = 'Medication') {
     try {
       await api.recordDoseAction(auth.profile.id, doseId, status);
-      ui.showAlert(`Dose marked as ${status}`, 'success');
+      const actionLabels = {
+        taken: 'marked as taken',
+        skipped: 'skipped',
+        snoozed: 'snoozed for 30 minutes'
+      };
+      const text = `${medName} dose has been ${actionLabels[status] || status}.`;
+      ui.announce(text);
+      ui.showAlert(`Dose ${actionLabels[status] || status}!`, 'success');
+
       // Refresh schedule and adherence stats
       await Promise.all([
         this.loadTodaySchedule(auth.profile.id),
@@ -160,10 +187,12 @@ window.app = {
         const item = document.createElement('div');
         item.className = 'card';
         item.style.marginBottom = '12px';
+        const safeProposedBy = ui.escapeHtml(change.proposedByName);
+        const safeSummary = ui.escapeHtml(change.summary);
         item.innerHTML = `
           <div class="flex-between">
             <div>
-              <strong>Proposed by ${change.proposedByName}:</strong> ${change.summary}
+              <strong>Proposed by ${safeProposedBy}:</strong> ${safeSummary}
               <div style="font-size:0.85em; color:var(--text-muted);">${new Date(change.createdAt).toLocaleString()}</div>
             </div>
             <div style="display:flex; gap:8px;">
@@ -218,14 +247,18 @@ window.app = {
       card.className = 'card';
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const dayNames = m.daysOfWeek.map((d) => days[d]).join(', ');
+      const safeName = ui.escapeHtml(m.name);
+      const safeDosage = ui.escapeHtml(m.dosage);
+      const safeTimes = ui.escapeHtml(m.times.join(', '));
+      const safeInstructions = ui.escapeHtml(m.instructions);
 
       card.innerHTML = `
         <div class="flex-between">
           <div>
-            <h3 style="font-size:1.25em;">${m.name} (${m.dosage})</h3>
-            <p style="color:var(--text-muted);">Times: ${m.times.join(', ')} • Days: ${dayNames}</p>
-            <p>Stock: <strong>${m.stockCount}</strong> ${m.stockCount <= m.refillThreshold ? '<span class="badge badge-low-stock">REFILL NEEDED</span>' : ''}</p>
-            <p style="font-size:0.9em; margin-top:4px;"><em>${m.instructions}</em></p>
+            <h3 style="font-size:1.25em;">${safeName} (${safeDosage})</h3>
+            <p style="color:var(--text-muted);">Times: ${safeTimes} • Days: ${dayNames}</p>
+            <p>Stock: <strong>${Number(m.stockCount)}</strong> ${m.stockCount <= m.refillThreshold ? '<span class="badge badge-low-stock">REFILL NEEDED</span>' : ''}</p>
+            <p style="font-size:0.9em; margin-top:4px;"><em>${safeInstructions}</em></p>
           </div>
           <div>
             <button class="btn btn-secondary action-delete-med" data-id="${m.id}">Delete</button>
@@ -304,13 +337,19 @@ window.app = {
     appts.forEach((a) => {
       const card = document.createElement('div');
       card.className = 'card';
+      const safeDoctor = ui.escapeHtml(a.doctorName);
+      const safeStatus = ui.escapeHtml(a.status);
+      const safeSpecialty = ui.escapeHtml(a.specialty);
+      const safeLocation = ui.escapeHtml(a.location);
+      const safeNotes = a.notes ? ui.escapeHtml(a.notes) : '';
+
       card.innerHTML = `
         <div class="flex-between">
           <div>
-            <h3 style="font-size:1.25em;">Dr. ${a.doctorName} <span class="badge badge-pending">${a.status}</span></h3>
+            <h3 style="font-size:1.25em;">Dr. ${safeDoctor} <span class="badge badge-pending">${safeStatus}</span></h3>
             <p style="color:var(--primary); font-weight:700;">${new Date(a.dateTime).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' })}</p>
-            <p>${a.specialty} • 📍 ${a.location}</p>
-            ${a.notes ? `<p style="font-size:0.9em; color:var(--text-muted); margin-top:4px;">Notes: ${a.notes}</p>` : ''}
+            <p>${safeSpecialty} • 📍 ${safeLocation}</p>
+            ${safeNotes ? `<p style="font-size:0.9em; color:var(--text-muted); margin-top:4px;">Notes: ${safeNotes}</p>` : ''}
           </div>
           <div>
             <button class="btn btn-secondary action-delete-appt" data-id="${a.id}">Cancel</button>
@@ -385,12 +424,15 @@ window.app = {
       card.className = 'card';
       const isSelf = m.id === auth.user.id;
       const isElder = auth.user.role === 'elder';
+      const safeName = ui.escapeHtml(m.name);
+      const safeRole = ui.escapeHtml(m.role);
+      const safeEmail = ui.escapeHtml(m.email);
 
       card.innerHTML = `
         <div class="flex-between">
           <div>
-            <h3>${m.name} <span class="badge ${m.role === 'elder' ? 'badge-taken' : 'badge-pending'}">${m.role.toUpperCase()}</span> ${!m.active ? '<span class="badge badge-low-stock">REVOKED</span>' : ''}</h3>
-            <p style="color:var(--text-muted);">${m.email}</p>
+            <h3>${safeName} <span class="badge ${m.role === 'elder' ? 'badge-taken' : 'badge-pending'}">${safeRole.toUpperCase()}</span> ${!m.active ? '<span class="badge badge-low-stock">REVOKED</span>' : ''}</h3>
+            <p style="color:var(--text-muted);">${safeEmail}</p>
             <div style="font-size:0.85em; margin-top:6px;">
               Permissions: Meds: ${m.permissions.canEditMeds ? 'Edit' : 'View'} • Appts: ${m.permissions.canEditAppointments ? 'Edit' : 'View'}
             </div>
@@ -467,10 +509,13 @@ window.app = {
       logs.forEach((log) => {
         const item = document.createElement('li');
         item.className = 'audit-item';
+        const safeActor = ui.escapeHtml(log.actorName);
+        const safeSummary = ui.escapeHtml(log.summary);
+        const safeAction = ui.escapeHtml(log.action);
         item.innerHTML = `
           <div>
-            <div class="audit-summary"><strong>${log.actorName}:</strong> ${log.summary}</div>
-            <div class="audit-time">${new Date(log.timestamp).toLocaleString()} • ${log.action}</div>
+            <div class="audit-summary"><strong>${safeActor}:</strong> ${safeSummary}</div>
+            <div class="audit-time">${new Date(log.timestamp).toLocaleString()} • ${safeAction}</div>
           </div>
         `;
         listEl.appendChild(item);
@@ -478,5 +523,401 @@ window.app = {
     } catch (err) {
       console.error('Failed to load audit logs', err);
     }
+  },
+
+  // --- Proactive Reminders & History ---
+  async loadNotifications(profileId) {
+    try {
+      const history = await api.getNotifications(profileId);
+      const listEl = document.getElementById('notifications-list');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      if (!history || history.length === 0) {
+        listEl.innerHTML = '<li class="audit-item" style="color:var(--text-muted);">No reminders sent yet. Reminders are dispatched automatically based on schedules and alerts.</li>';
+        return;
+      }
+
+      history.forEach((n) => {
+        const item = document.createElement('li');
+        item.className = 'audit-item';
+        const safeSubject = ui.escapeHtml(n.subject);
+        const safeEmail = ui.escapeHtml(n.targetEmail);
+        item.innerHTML = `
+          <div>
+            <div class="audit-summary"><strong>${safeSubject}</strong></div>
+            <div class="audit-time">Sent to ${safeEmail} at ${new Date(n.sentAt).toLocaleString()} • <span class="badge badge-taken">DELIVERED</span></div>
+          </div>
+        `;
+        listEl.appendChild(item);
+      });
+    } catch (err) {
+      console.error('Failed to load notification history', err);
+    }
+  },
+
+  async handleSendTestReminder() {
+    try {
+      await api.sendTestReminder(auth.profile.id);
+      ui.showAlert('Test reminder dispatched to your email!', 'success');
+      await this.loadNotifications(auth.profile.id);
+    } catch (err) {
+      ui.showAlert(err.message, 'error');
+    }
+  },
+
+  // ==========================================================================
+  // Google Gemini AI Features
+  // ==========================================================================
+
+  // --- 1. Adherence Insights ---
+  async loadAdherenceInsight(profileId) {
+    const box = document.getElementById('ai-insight-box');
+    const textEl = document.getElementById('ai-insight-text');
+    const tipEl = document.getElementById('ai-insight-tip');
+    if (!box || !textEl) return;
+
+    try {
+      const insight = await api.getAdherenceInsight();
+      if (insight && insight.insight) {
+        textEl.textContent = `"${insight.insight}"`;
+        tipEl.textContent = insight.recommendation ? `💡 Tip: ${insight.recommendation}` : '';
+        box.classList.remove('hidden');
+      }
+    } catch (err) {
+      console.warn('Could not load AI insight', err);
+    }
+  },
+
+  // --- 2. Prescription Scanner ---
+  openPrescriptionModal() {
+    const dropzone = document.getElementById('scan-dropzone');
+    const loading = document.getElementById('scan-loading');
+    const review = document.getElementById('scan-review-container');
+    const fileInput = document.getElementById('prescription-file-input');
+
+    if (dropzone) dropzone.classList.remove('hidden');
+    if (loading) loading.classList.add('hidden');
+    if (review) review.classList.add('hidden');
+    if (fileInput) fileInput.value = '';
+
+    ui.openModal('modal-scan-prescription');
+  },
+
+  async handleScanPrescription(file) {
+    if (!file) return;
+
+    const dropzone = document.getElementById('scan-dropzone');
+    const loading = document.getElementById('scan-loading');
+    const review = document.getElementById('scan-review-container');
+    const tbody = document.getElementById('scan-draft-tbody');
+    const notesEl = document.getElementById('scan-notes');
+
+    if (dropzone) dropzone.classList.add('hidden');
+    if (loading) loading.classList.remove('hidden');
+    if (review) review.classList.add('hidden');
+
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const result = await api.scanPrescription(formData);
+
+      if (tbody) tbody.innerHTML = '';
+      const medicines = result.medicines || [];
+
+      if (medicines.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No medications could be recognized. Please check the image quality.</td></tr>';
+      } else {
+        medicines.forEach((med, index) => {
+          const row = document.createElement('tr');
+          row.dataset.index = index;
+          const safeName = ui.escapeHtml(med.name || '');
+          const safeDosage = ui.escapeHtml(med.dosage || '');
+          const safeInstructions = ui.escapeHtml(med.instructions || 'Take as prescribed');
+          const safeTimes = ui.escapeHtml((med.suggestedTimes || ['08:00']).join(', '));
+
+          row.innerHTML = `
+            <td><input type="text" class="scan-med-name" value="${safeName}" required></td>
+            <td><input type="text" class="scan-med-dosage" value="${safeDosage}" required></td>
+            <td>
+              <select class="scan-med-form">
+                <option value="tablet" ${med.form === 'tablet' ? 'selected' : ''}>Tablet</option>
+                <option value="capsule" ${med.form === 'capsule' ? 'selected' : ''}>Capsule</option>
+                <option value="syrup" ${med.form === 'syrup' ? 'selected' : ''}>Syrup</option>
+                <option value="injection" ${med.form === 'injection' ? 'selected' : ''}>Injection</option>
+                <option value="drops" ${med.form === 'drops' ? 'selected' : ''}>Drops</option>
+                <option value="inhaler" ${med.form === 'inhaler' ? 'selected' : ''}>Inhaler</option>
+              </select>
+            </td>
+            <td><input type="text" class="scan-med-times" value="${safeTimes}" required></td>
+            <td><input type="text" class="scan-med-instructions" value="${safeInstructions}"></td>
+            <td style="text-align:center;">
+              <button type="button" class="btn btn-secondary btn-sm scan-row-delete" title="Remove medication" style="color:var(--danger); font-weight:bold;">&times;</button>
+            </td>
+          `;
+
+          row.querySelector('.scan-row-delete').addEventListener('click', () => {
+            row.remove();
+          });
+
+          tbody.appendChild(row);
+        });
+      }
+
+      if (notesEl) {
+        notesEl.textContent = result.notes ? `Physician / AI Notes: ${result.notes}` : '';
+      }
+
+      if (loading) loading.classList.add('hidden');
+      if (review) review.classList.remove('hidden');
+    } catch (err) {
+      if (loading) loading.classList.add('hidden');
+      if (dropzone) dropzone.classList.remove('hidden');
+      ui.showAlert(err.message || 'Prescription scanning failed', 'error');
+    }
+  },
+
+  async handleSaveScannedMeds() {
+    const tbody = document.getElementById('scan-draft-tbody');
+    if (!tbody) return;
+
+    const rows = tbody.querySelectorAll('tr');
+    if (rows.length === 0) {
+      ui.showAlert('No medications to save.', 'error');
+      return;
+    }
+
+    let addedCount = 0;
+    for (const row of rows) {
+      const nameInput = row.querySelector('.scan-med-name');
+      const dosageInput = row.querySelector('.scan-med-dosage');
+      const formInput = row.querySelector('.scan-med-form');
+      const timesInput = row.querySelector('.scan-med-times');
+      const instInput = row.querySelector('.scan-med-instructions');
+
+      if (!nameInput || !nameInput.value.trim()) continue;
+
+      const timesArr = (timesInput ? timesInput.value : '08:00')
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const payload = {
+        name: nameInput.value.trim(),
+        dosage: dosageInput ? dosageInput.value.trim() : '1 dose',
+        form: formInput ? formInput.value : 'tablet',
+        times: timesArr.length > 0 ? timesArr : ['08:00'],
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startDate: new Date().toISOString().slice(0, 10),
+        instructions: instInput ? instInput.value.trim() : 'Take as directed',
+        stockCount: 30,
+        refillThreshold: 5
+      };
+
+      try {
+        await api.createMedication(auth.profile.id, payload);
+        addedCount += 1;
+      } catch (err) {
+        console.error('Failed to create scanned med', err);
+      }
+    }
+
+    ui.closeModal('modal-scan-prescription');
+    ui.showAlert(`Successfully added ${addedCount} medication(s) to CareCircle!`, 'success');
+    await Promise.all([
+      this.loadMedications(auth.profile.id),
+      this.loadTodaySchedule(auth.profile.id)
+    ]);
+  },
+
+  // --- 3. Safety & Drug Interaction Check ---
+  async handleRunSafetyCheck() {
+    ui.openModal('modal-safety-check');
+    const loading = document.getElementById('safety-loading');
+    const resultDiv = document.getElementById('safety-result');
+    const badge = document.getElementById('safety-badge');
+    const summary = document.getElementById('safety-summary');
+    const findingsList = document.getElementById('safety-findings-list');
+
+    if (loading) loading.classList.remove('hidden');
+    if (resultDiv) resultDiv.classList.add('hidden');
+
+    try {
+      const data = await api.checkInteractions();
+
+      const sev = (data.severity || 'none').toLowerCase();
+      if (badge) {
+        badge.className = `safety-badge ${sev}`;
+        badge.textContent = data.severity ? data.severity.toUpperCase() : 'NONE';
+      }
+
+      if (summary) {
+        summary.textContent = data.summary || 'No safety conflicts detected.';
+      }
+
+      if (findingsList) {
+        findingsList.innerHTML = '';
+        const findings = data.findings || [];
+        if (findings.length === 0) {
+          findingsList.innerHTML = '<p style="color:var(--text-muted); font-size:0.95em;">No drug-drug interactions, duplicate therapies, or timing conflicts identified.</p>';
+        } else {
+          findings.forEach((f) => {
+            const item = document.createElement('div');
+            item.className = 'safety-finding-item';
+            const safeMeds = ui.escapeHtml((f.medications || []).join(' + '));
+            const safeSeverity = ui.escapeHtml((f.severity || 'info').toUpperCase());
+            const safeDesc = ui.escapeHtml(f.description);
+            const safeRec = ui.escapeHtml(f.recommendation || 'Consult your doctor.');
+
+            item.innerHTML = `
+              <div style="font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between;">
+                <span>💊 ${safeMeds}</span>
+                <span class="safety-badge ${(f.severity || 'low').toLowerCase()}">${safeSeverity}</span>
+              </div>
+              <p style="margin-bottom:6px; font-size:0.95em;">${safeDesc}</p>
+              <div style="font-size:0.88em; color:var(--text-muted);"><strong>Recommendation:</strong> ${safeRec}</div>
+            `;
+            findingsList.appendChild(item);
+          });
+        }
+      }
+
+      if (loading) loading.classList.add('hidden');
+      if (resultDiv) resultDiv.classList.remove('hidden');
+    } catch (err) {
+      if (loading) loading.classList.add('hidden');
+      ui.showAlert(err.message || 'Safety check failed', 'error');
+    }
+  },
+
+  // --- 4. Conversational Voice & AI Assistant ---
+  toggleChat(forceOpen = null) {
+    const panel = document.getElementById('ai-chat-panel');
+    if (!panel) return;
+    if (forceOpen === true) {
+      panel.classList.remove('hidden');
+    } else if (forceOpen === false) {
+      panel.classList.add('hidden');
+    } else {
+      panel.classList.toggle('hidden');
+    }
+  },
+
+  appendChatBubble(sender, text) {
+    const messages = document.getElementById('ai-chat-messages');
+    if (!messages) return;
+
+    const bubble = document.createElement('div');
+    bubble.className = `ai-bubble ${sender}`;
+    if (sender === 'user') {
+      bubble.textContent = text;
+    } else {
+      bubble.innerHTML = ui.escapeHtml(text)
+        .replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>')
+        .replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>')
+        .replace(/\n/g, '<br>');
+    }
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+    return bubble;
+  },
+
+  appendConfirmationCard(confirmationData, replyText) {
+    const messages = document.getElementById('ai-chat-messages');
+    if (!messages) return;
+
+    const card = document.createElement('div');
+    card.className = 'ai-action-card';
+
+    let actionTitle = 'Pending Action Confirmation';
+    let actionDesc = ui.escapeHtml(replyText);
+
+    if (confirmationData.action === 'mark_taken') {
+      actionTitle = 'Confirm Medication Dose';
+      actionDesc = `Mark <strong>${ui.escapeHtml(confirmationData.medicationName)}</strong> (${ui.escapeHtml(confirmationData.time)}) as taken?`;
+    } else if (confirmationData.action === 'add_appointment') {
+      actionTitle = 'Confirm Doctor Appointment';
+      actionDesc = `Schedule appointment with <strong>Dr. ${ui.escapeHtml(confirmationData.doctorName)}</strong> on <strong>${ui.escapeHtml(confirmationData.dateTime)}</strong>?`;
+    }
+
+    card.innerHTML = `
+      <div class="ai-action-card-title">⚠️ ${actionTitle}</div>
+      <div class="ai-action-card-body">${actionDesc}</div>
+      <div class="ai-action-buttons">
+        <button type="button" class="ai-btn-confirm">✅ Confirm</button>
+        <button type="button" class="ai-btn-cancel">❌ Cancel</button>
+      </div>
+    `;
+
+    card.querySelector('.ai-btn-confirm').addEventListener('click', async () => {
+      card.remove();
+      await this.sendChatMessage(null, true, confirmationData);
+    });
+
+    card.querySelector('.ai-btn-cancel').addEventListener('click', () => {
+      card.remove();
+      this.appendChatBubble('assistant', 'Action cancelled.');
+    });
+
+    messages.appendChild(card);
+    messages.scrollTop = messages.scrollHeight;
+  },
+
+  async sendChatMessage(message = null, confirmed = false, confirmationData = null) {
+    if (message) {
+      this.appendChatBubble('user', message);
+    }
+
+    const thinkingBubble = this.appendChatBubble('assistant', '<em>Thinking...</em>');
+
+    try {
+      const response = await api.sendAssistantMessage({
+        message: message || '',
+        confirmed,
+        confirmationData
+      });
+
+      thinkingBubble.remove();
+
+      if (response.reply) {
+        this.appendChatBubble('assistant', response.reply);
+      }
+
+      if (response.requiresConfirmation && response.confirmationData) {
+        this.appendConfirmationCard(response.confirmationData, response.reply);
+      }
+
+      // If an action was confirmed and executed, refresh app data seamlessly
+      if (confirmed && response.success) {
+        await this.loadAllData();
+      }
+    } catch (err) {
+      thinkingBubble.remove();
+      this.appendChatBubble('assistant', `⚠️ ${err.message || 'Could not process query'}`);
+    }
+  },
+
+  handleMicInput() {
+    const micBtn = document.getElementById('ai-mic-btn');
+    const input = document.getElementById('ai-chat-input');
+    if (!micBtn) return;
+
+    micBtn.classList.add('listening');
+
+    speech.startListening(
+      (transcript) => {
+        micBtn.classList.remove('listening');
+        if (input) {
+          input.value = transcript;
+          this.sendChatMessage(transcript);
+          input.value = '';
+        }
+      },
+      (err) => {
+        micBtn.classList.remove('listening');
+        console.warn('Speech recognition ended/error:', err);
+      }
+    );
   }
 };

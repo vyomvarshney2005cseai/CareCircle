@@ -6,7 +6,6 @@ const logger = require('../utils/logger');
  * Global error handling middleware returning standardized JSON responses.
  * Pattern: { error: { code: string, message: string, details?: any } }
  */
-// eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
   // 1. Zod Validation Errors
   if (err instanceof ZodError) {
@@ -52,6 +51,24 @@ function errorHandler(err, req, res, next) {
       error: {
         code: 'TOKEN_EXPIRED',
         message: 'Authentication session has expired'
+      }
+    });
+  }
+
+  // 4. File Upload (Multer) Errors
+  if (err.name === 'MulterError') {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({
+        error: {
+          code: 'FILE_TOO_LARGE',
+          message: 'Prescription image exceeds the 5MB file size limit.'
+        }
+      });
+    }
+    return res.status(400).json({
+      error: {
+        code: 'FILE_UPLOAD_ERROR',
+        message: err.message
       }
     });
   }

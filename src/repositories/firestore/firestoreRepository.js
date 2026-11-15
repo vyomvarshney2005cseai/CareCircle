@@ -22,6 +22,11 @@ class FirestoreRepository extends RepositoryInterface {
     return { id: snap.id, ...snap.data() };
   }
 
+  async listProfiles() {
+    const snap = await this.db.collection('profiles').get();
+    return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  }
+
   async createProfile(profileData) {
     const id = profileData.id || crypto.randomUUID();
     const docRef = this._profileDoc(id);
@@ -289,6 +294,15 @@ class FirestoreRepository extends RepositoryInterface {
     };
     await docRef.set(data, { merge: true });
     return data;
+  }
+
+  async listNotifications(profileId, limit = 50) {
+    const snap = await this._profileDoc(profileId)
+      .collection('notifications')
+      .orderBy('sentAt', 'desc')
+      .limit(limit)
+      .get();
+    return snap.docs.map((doc) => ({ key: doc.id, profileId, ...doc.data() }));
   }
 
   // --- Audit Logs ---

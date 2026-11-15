@@ -17,7 +17,7 @@ function getLocalDateString(timeZone = 'Asia/Kolkata', referenceDate = new Date(
       day: '2-digit'
     });
     return formatter.format(referenceDate);
-  } catch (err) {
+  } catch (_err) {
     // Fallback if timezone invalid
     return referenceDate.toISOString().slice(0, 10);
   }
@@ -31,17 +31,13 @@ function getLocalDateString(timeZone = 'Asia/Kolkata', referenceDate = new Date(
  */
 function getLocalDayOfWeek(timeZone = 'Asia/Kolkata', referenceDate = new Date()) {
   try {
-    const formatter = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      weekday: 'narrow'
-    });
-    // Or format to weekday index
+    // Format to weekday index
     const dateStr = getLocalDateString(timeZone, referenceDate);
     const [year, month, day] = dateStr.split('-').map(Number);
     // Construct local midnight date to get day index
     const localDate = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
     return localDate.getUTCDay();
-  } catch (err) {
+  } catch (_err) {
     return referenceDate.getDay();
   }
 }

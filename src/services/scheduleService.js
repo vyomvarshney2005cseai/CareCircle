@@ -8,7 +8,6 @@ const {
   getPastNDates
 } = require('../utils/dateUtils');
 const { recordAudit } = require('./auditService');
-const logger = require('../utils/logger');
 
 /**
  * Service generating daily medication schedules, recording doses, and computing adherence.

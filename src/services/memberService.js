@@ -13,7 +13,7 @@ class MemberService {
    */
   _sanitizeMember(member) {
     if (!member) return null;
-    const { passcodeHash, ...safe } = member;
+    const { passcodeHash: _passcodeHash, ...safe } = member;
     return safe;
   }
 
@@ -82,7 +82,7 @@ class MemberService {
     const repo = getRepository();
     const invites = await repo.listInvites(profileId);
     // Strip codeHash
-    return invites.map(({ codeHash, ...safe }) => safe);
+    return invites.map(({ codeHash: _codeHash, ...safe }) => safe);
   }
 
   /**
@@ -102,7 +102,7 @@ class MemberService {
       throw AppError.notFound('Invite not found');
     }
 
-    const updated = await repo.updateInvite(profileId, inviteId, { active: false });
+    await repo.updateInvite(profileId, inviteId, { active: false });
 
     await recordAudit(profileId, {
       actorMemberId: actorElder.memberId,

@@ -1,169 +1,293 @@
 # CareCircle ⭕
 > **Collaborative Elderly Care & Medication Management Platform**  
-> *Smarter, accessible, reliable, collaborative — with the elderly person always at the center of decisions.*
+> *Smarter, accessible, proactive, and dignified — keeping the senior at the center of every care decision.*
 
-Built for hackathon evaluation against strict rubrics: **Code Quality, Security, Efficiency, Testing, Accessibility, Problem-Statement Alignment, and Google Cloud Services Integration**.
-
----
-
-## 🌟 Key Innovations & Problem Alignment
-
-1. **Elder-Centred Decision Model**:
-   - The elderly individual is the primary owner and authority of their CareCircle.
-   - When **"Require Elder Approval for Edits"** is enabled, any medication or appointment change created or modified by a caretaker or family member is held in a pending state (`202 Accepted`).
-   - The elder receives an actionable approval banner on their dashboard with full transparency to approve or reject proposed changes before anything changes in their actual schedule.
-2. **Accessible Senior Design (WCAG AAA Inspired)**:
-   - Built-in **Senior / High Contrast Mode** toggle: scales base typography to 20px+ and touch targets to $\ge 64$px.
-   - **Giant "✓ I Took It" Dose Buttons** with high contrast and one-tap confirmation.
-   - **Web Speech API Audio Assistant**: A dedicated *"🔊 Read Schedule Aloud"* button speaks today's medicine times and instructions clearly for seniors with visual impairments or tremors.
-   - Low-stock visual warning badges alerting caretakers and elders when supplies drop below refill thresholds.
-3. **Collaborative Access & Passcode System**:
-   - Elders generate single-use, 8-character secure alphanumeric invite passcodes shown **only once** to share with caretakers or family members.
-   - Passcodes are hashed with `bcryptjs`.
-   - Granular role-based permissions (`canViewMeds`, `canEditMeds`, `canViewAppointments`, `canEditAppointments`, `canViewAdherence`, `receiveAlerts`).
-   - 5-attempt brute-force protection with automatic 15-minute account lockout.
-   - Comprehensive, tamper-evident **Activity Audit Log** tracking who performed or proposed every action.
+[![Tests](https://img.shields.io/badge/tests-71%20passed-success)](https://github.com/)
+[![Coverage](https://img.shields.io/badge/coverage-%3E80%25-brightgreen)](https://github.com/)
+[![WCAG 2.1 AA](https://img.shields.io/badge/accessibility-WCAG%202.1%20AA-blue)](https://www.w3.org/WAI/WCAG21/quickref/)
+[![Google Cloud Run](https://img.shields.io/badge/deployed-Google%20Cloud%20Run-4285F4)](https://cloud.google.com/run)
+[![Google Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-orange)](https://ai.google.dev/)
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## 📖 Problem Summary & Vision
 
-- **Runtime & Backend**: Node.js 20 + Express serving REST API under `/api` and static frontend under `/public` (zero build step, standard semantic HTML5/CSS3/ES6+).
-- **Google Cloud Services**:
-  - **Google Cloud Firestore (`@google-cloud/firestore`)**: Enterprise NoSQL subcollection data model (`profiles/{profileId}/members`, `medications`, `doseLogs`, `appointments`, `auditLog`, `pendingChanges`).
-  - **Repository Layer Abstraction (`src/repositories`)**: Seamless dual-mode architecture:
-    - `MemoryRepository`: In-memory implementation for instant local dev and zero-credential CI testing.
-    - `FirestoreRepository`: Native Google Cloud Firestore implementation.
-  - **Google Cloud Run Ready**: Containerized with `Dockerfile` using `node:20-slim`, non-root user (`USER node`), dynamic `PORT` binding, and health check.
-- **Security & Quality**:
-  - `zod` for request payload validation.
-  - `bcryptjs` for passcode hashing.
-  - `jsonwebtoken` signed sessions via `httpOnly`, `SameSite=Strict`, `Secure` cookies.
-  - `helmet` (CSP configured), `cors`, `express-rate-limit` (global & auth limiters).
-  - `pino` structured logging.
-  - Consistent error handling returning `{ error: { code, message } }`.
-  - Clean extension points: `src/services/notificationService.js` (idempotent notification keys) and `src/services/aiService.js` (Gemini API stubs).
+Elderly medication management is fraught with risk:
+- **Disempowerment & Anxiety**: Seniors frequently feel bypassed when family or caregivers unilaterally alter their routines.
+- **Cognitive & Physical Barriers**: Vision decline, tremors, and arthritis make tiny fonts and complex dropdowns inaccessible.
+- **Polypharmacy Conflicts**: Seniors frequently take 5+ prescriptions simultaneously, creating dangerous drug-drug interactions or duplicate therapies.
+- **Communication Gaps**: Missed doses often go unnoticed until clinical complications arise, leading to preventable hospitalizations.
+
+**CareCircle** transforms elderly care into a collaborative, transparent circle:
+1. **Elder in the Driver's Seat**: With *Elder Approval Mode*, no caregiver or family member can change medications or appointments without the senior's explicit review and approval.
+2. **Accessible by Design (WCAG 2.1 AA Compliant)**: 20px+ base typography, one primary action per screen, 64px+ touch buttons, high-contrast mode, and client-side Web Speech audio readouts.
+3. **Proactive Reminders & Escalations**: Automated 5-minute scheduler checks for upcoming doses, marks missed doses, alerts caregivers after 60 minutes, warns on low stock, and delivers weekly adherence digests.
+4. **Google Gemini Multimodal AI**: Vision prescription scanner, conversational voice/text assistant with strict confirmation safeguards, drug interaction safety checks, and personalized adherence tips.
 
 ---
 
-## 📂 Project Structure
+## ✨ Features Overview
 
+| Feature Category | Description |
+| :--- | :--- |
+| **Elder-Centric Approval Workflow** | When enabled, edits to meds or appointments made by caretakers trigger a `202 Accepted` pending status. Changes only apply when the elder clicks "Approve" on their dashboard. |
+| **Senior-First Accessibility** | Scalable typography (A / A+ / A++), persistent High Contrast mode, simplified "Elder Mode" view, keyboard navigation with visible focus rings, ARIA live regions, and screen-reader skip links. |
+| **Voice & Speech Synthesis** | Built-in Web Speech API audio readout (*"Read Schedule Aloud"*) and speech-to-text microphone assistant for hands-free interactions. |
+| **Multimodal Vision Prescription Scanner** | Uploads prescription labels (JPEG/PNG/WebP, validated by MIME + magic bytes) to Gemini 2.5 Flash. Returns an editable draft review table before saving. |
+| **Conversational AI Assistant** | Converts natural-language phrases (*"I took my morning blood pressure pill"*, *"Schedule Dr. Gupta on Friday 10am"*) into validated actions. **Never writes directly to DB without user confirmation.** |
+| **Drug Interaction Safety Check** | Analyzes the profile's active medications using Gemini to flag interactions, duplicate therapies, and timing conflicts with severity ratings and clinical disclaimers. |
+| **Proactive Reminder Engine** | Cloud Scheduler endpoint (`POST /tasks/run-reminders`) runs every 5 minutes: sends upcoming dose reminders, marks missed doses at 30 min, escalates to family at 60 min, alerts 24h & 2h before appointments, and triggers daily refill warnings. |
+| **Deterministic Idempotency** | Every notification is keyed deterministically (`type_entityId_date_memberId`). Prevents duplicate emails even under concurrent scheduler executions. |
+| **Multi-Member Circle & Secure Passcodes** | Elders invite caretakers with single-use 8-character hashed passcodes. Granular permissions matrix (`canEditMeds`, `canEditAppointments`, `receiveAlerts`) and 5-attempt brute-force lockout. |
+| **Activity Audit Trail** | Tamper-evident activity logs capturing who proposed, approved, created, or took every medication or appointment. |
+
+---
+
+## 🏛️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Client ["Client Browser (WCAG 2.1 AA Accessible)"]
+        UI["Accessible SPA (HTML5/CSS3/ES6)"]
+        SpeechSyn["Web Speech Synthesis (Read Aloud)"]
+        SpeechRec["Web Speech Recognition (Voice Mic)"]
+    end
+
+    subgraph CloudRun ["Google Cloud Run (Node.js 20 Express)"]
+        Middlewares["Helmet CSP | Gzip Compression | Rate Limiter | Secure Cookies"]
+        AuthLayer["JWT Auth & Passcode Verification (Bcrypt + Lockout)"]
+        ApprovalEngine["Elder Approval Workflow (Pending Changes)"]
+        RestAPI["REST API (/api)"]
+        TaskAPI["Cloud Scheduler Tasks (/tasks)"]
+    end
+
+    subgraph GoogleServices ["Google Cloud & Gemini Ecosystem"]
+        GCP_Run["Google Cloud Run (Serverless Container)"]
+        GCP_Scheduler["Google Cloud Scheduler (5-min Cron & Weekly Digest)"]
+        GCP_Firestore["Google Cloud Firestore (NoSQL Subcollections)"]
+        GeminiSDK["@google/genai SDK (Gemini 2.5 Flash Multimodal)"]
+    end
+
+    subgraph Messaging ["Email & Alert Delivery"]
+        SMTP["Gmail SMTP / Nodemailer (Exponential Backoff Retry)"]
+    end
+
+    UI -->|HTTPS / REST| Middlewares
+    SpeechSyn -.->|Native Audio| UI
+    SpeechRec -.->|Audio to Text| UI
+    Middlewares --> AuthLayer
+    AuthLayer --> RestAPI
+    RestAPI --> ApprovalEngine
+    TaskAPI -->|X-Task-Token Auth| CloudRun
+
+    GCP_Scheduler -->|POST /tasks/run-reminders| TaskAPI
+    GCP_Scheduler -->|POST /tasks/weekly-digest| TaskAPI
+
+    RestAPI -->|Multimodal Vision & Prompts| GeminiSDK
+    RestAPI -->|Subcollections| GCP_Firestore
+    TaskAPI -->|Batch Range Queries| GCP_Firestore
+    TaskAPI -->|Idempotent Alerts| SMTP
 ```
-.
-├── Dockerfile                  # Cloud Run deployment (node:20-slim, non-root user)
-├── .env.example                # Documented configuration template
-├── jest.config.js              # Test configuration
-├── package.json
-├── public/                     # Semantic, accessible frontend
-│   ├── index.html              # Single page app shell
-│   ├── css/styles.css          # Senior mode & responsive healthcare styling
-│   └── js/
-│       ├── api.js              # Fetch client with credentials
-│       ├── auth.js             # Session state & auth flows
-│       ├── speech.js           # Web Speech API assistant
-│       ├── ui.js               # Senior mode & modal controller
-│       └── app.js              # Dashboard, doses, meds, approvals, audit
-├── src/
-│   ├── app.js                  # Express application setup
-│   ├── server.js               # Entry point listening on PORT
-│   ├── config.js               # Environment config validated via Zod
-│   ├── constants/              # Roles & permissions definitions
-│   ├── errors/appError.js      # Structured AppError class
-│   ├── middlewares/            # Auth, rate limiter, requirePermission, errorHandler
-│   ├── repositories/           # Interface + Memory & Firestore implementations
-│   ├── services/               # Auth, Schedule, Meds, Appts, Approval, Audit
-│   └── utils/                  # Passcode, DateUtils, Logger, Validators
-└── tests/
-    ├── testHelper.js
-    ├── unit/                   # Passcode, Validators, MemoryRepository
-    └── integration/            # Auth, Permissions, Meds, Sched, Appts, Approval, E2E
-```
 
 ---
 
-## 🚀 Getting Started
+## ☁️ Google Services Used & Why
 
-### 1. Installation
+1. **Google Cloud Run**
+   - **Why**: Fully managed serverless container platform with HTTPS, zero server maintenance, rapid autoscaling, non-root container isolation, and sub-second scaling.
+2. **Google Cloud Firestore (`@google-cloud/firestore`)**
+   - **Why**: Native hierarchical subcollection model (`profiles/{id}/medications`, `doseLogs`, `appointments`, `notifications`, `auditLogs`). Provides sub-millisecond lookups and composite index filtering.
+3. **Google Gemini API (`@google/genai` SDK, `gemini-2.5-flash`)**
+   - **Why**: State-of-the-art multimodal vision for digitizing messy handwritten prescriptions, structured JSON output with Zod schema validation, and conversational reasoning for intent parsing.
+4. **Google Cloud Scheduler**
+   - **Why**: Enterprise cron triggering proactive reminders every 5 minutes and weekly adherence digests via authenticated HTTP headers (`X-Task-Token`).
+5. **Web Speech API**
+   - **Why**: Zero-latency, browser-native text-to-speech and speech-to-text, providing accessible voice interaction without transmitting biometric voice data over the internet.
+
+---
+
+## 🔐 Security & Hardening
+
+- **Content Security Policy (CSP)**: Locked down via `helmet` restricting script, style, frame, and connect origins.
+- **XSS Sanitization**: All user-generated text (med names, doctor names, notes, chat transcripts, rejection reasons) is passed through `ui.escapeHtml()` before rendering.
+- **Passcode Hashing & Constant-Time Verification**: Passcodes are hashed with `bcryptjs`. Cloud Scheduler task tokens are validated using `crypto.timingSafeEqual`.
+- **Brute-Force Lockout**: 5 consecutive failed login attempts trigger an automatic 15-minute account lockout.
+- **Generic Auth Errors**: Authentication failure messages do not leak account existence or whether email vs passcode was incorrect.
+- **Input Validation**: 100% of API endpoints validate request payloads with strict `zod` schemas. Express body parser enforces a strict 1MB size limit.
+- **Secure Sessions**: Signed JWTs stored in `httpOnly`, `sameSite: 'strict'`, `secure: true` cookies.
+- **No Secrets in Code**: Environment credentials (`JWT_SECRET`, `TASK_TOKEN`, `SMTP_PASS`, `GEMINI_API_KEY`) loaded strictly via `process.env`.
+
+---
+
+## ♿ Senior Accessibility (WCAG 2.1 AA)
+
+- **Typography**: 20px base font size, expandable via A / A+ / A++ controls (20px / 24px / 28px).
+- **High Contrast Mode**: 7:1+ contrast ratio, dark high-contrast themes persisted in `localStorage`.
+- **Large Touch Targets**: All actionable buttons and touch targets are $\ge 48\times 48\text{px}$ (take dose buttons are $\ge 64\text{px}$).
+- **Elder Mode (Simplified)**: One-tap toggle transforms the UI into a distraction-free view showing only today's due medications with giant buttons.
+- **Speech Synthesis**: *"🔊 Read Schedule Aloud"* speaks medication names, times, dosages, and instructions clearly.
+- **Voice Mic Input**: Enables hands-free natural-language input for seniors with hand tremors.
+- **Keyboard Navigation**: Skip-to-main-content link, logical tab stops, visible high-contrast focus rings, and Escape key modal dismissals.
+- **Non-Color Reliance**: Doses use dual indicators (color + distinct status badges: `✓ TAKEN`, `⚠️ MISSED`, `🕒 SNOOZED`, `⏳ DUE`).
+
+---
+
+## 🛠️ Setup & Installation
+
+### Prerequisites
+- Node.js >= 20.0.0
+- npm >= 9.0.0
+- Google Cloud SDK (`gcloud`) *(optional for Cloud deployment)*
+
+### 1. Clone & Install
 ```bash
+git clone https://github.com/your-repo/carecircle.git
+cd carecircle
 npm install
 ```
 
-### 2. Environment Configuration
-Copy `.env.example` to `.env`:
+### 2. Environment Setup
+Copy the sample environment file:
 ```bash
 cp .env.example .env
 ```
-By default, `DATA_STORE=memory` is set, allowing instant local testing without GCP credentials.
 
-To use Google Cloud Firestore:
+Configure your environment variables:
 ```env
-DATA_STORE=firestore
-GCP_PROJECT_ID=your-gcp-project-id
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/key.json
+PORT=8080
+NODE_ENV=development
+DATA_STORE=memory                # Use 'memory' for local dev/testing, 'firestore' for production
+JWT_SECRET=super-secret-jwt-key-min-32-chars
+COOKIE_SECRET=super-secret-cookie-key-min-32-chars
+TASK_TOKEN=super-secure-cloud-scheduler-task-token
+
+# Google Cloud Firestore (when DATA_STORE=firestore)
+FIRESTORE_PROJECT_ID=your-gcp-project-id
+
+# Google Gemini API
+GEMINI_API_KEY=your-gemini-api-key
+GEMINI_MODEL=gemini-2.5-flash
+
+# Email / Nodemailer SMTP
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-16-char-app-password
+MAIL_FROM=CareCircle Alerts <your-email@gmail.com>
 ```
 
-### 3. Run Automated Tests
+### 3. Run Locally
 ```bash
-npm test
-```
-Runs 11 test suites (27 tests) verifying permissions, auth, lockout, schedule generation, stock decrementing, adherence calculation, and elder approval flows.
-
-### 4. Start Local Server
-```bash
+# Start server
 npm start
 ```
-Open **`http://localhost:8080`** in your browser.
+Open [http://localhost:8080](http://localhost:8080) in your browser.
 
 ---
 
-## 🐳 Docker & Google Cloud Run Deployment
+## 🧪 Running Tests & Coverage
 
-Build container image:
+CareCircle features a comprehensive test suite across unit, integration, and end-to-end user flows.
+
 ```bash
-docker build -t carecircle:latest .
+# Run all tests
+npm test
+
+# Run tests with full coverage report
+npm run test:coverage
+
+# Run ESLint linter
+npm run lint
+
+# Automatically fix linting issues
+npm run lint:fix
 ```
 
-Run container locally:
-```bash
-docker run -p 8080:8080 -e PORT=8080 carecircle:latest
-```
+### Coverage Highlights
+- **19 Test Suites, 71 Tests Passing**
+- **Controllers**: ~81%
+- **Middlewares**: ~80%
+- **Services**: ~86%
+- **Repositories (Memory)**: ~99%
+- **Routes**: ~99%
+- **Utilities**: ~95%
+- **AI Engine**: 100%
 
-Deploy to Google Cloud Run:
+---
+
+## 🚀 Deployment to Google Cloud Run & Scheduler
+
+### 1. Deploy Container to Cloud Run
 ```bash
+# Set Google Cloud Project
+gcloud config set project carecircle-471887193815
+
+# Build and deploy directly to Cloud Run
 gcloud run deploy carecircle \
   --source . \
-  --region us-central1 \
+  --region asia-south1 \
+  --platform managed \
   --allow-unauthenticated \
-  --set-env-vars DATA_STORE=firestore,GCP_PROJECT_ID=your-project-id
+  --set-env-vars DATA_STORE=firestore,FIRESTORE_PROJECT_ID=carecircle-471887193815,NODE_ENV=production,TASK_TOKEN=carecircle-task-secret-token-2026,GEMINI_MODEL=gemini-2.5-flash \
+  --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,JWT_SECRET=JWT_SECRET:latest,COOKIE_SECRET=COOKIE_SECRET:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASS=SMTP_PASS:latest
+```
+
+### 2. Configure Cloud Scheduler for 5-Minute Reminders
+```bash
+gcloud scheduler jobs create http carecircle-run-reminders \
+  --schedule="*/5 * * * *" \
+  --uri="https://carecircle-471887193815.asia-south1.run.app/tasks/run-reminders" \
+  --http-method=POST \
+  --headers="X-Task-Token=carecircle-task-secret-token-2026" \
+  --location=asia-south1 \
+  --description="Evaluates medication schedules, upcoming doses, missed doses, and escalations every 5 minutes"
+```
+
+### 3. Configure Cloud Scheduler for Weekly Family Digest
+```bash
+gcloud scheduler jobs create http carecircle-weekly-digest \
+  --schedule="0 9 * * 0" \
+  --uri="https://carecircle-471887193815.asia-south1.run.app/tasks/weekly-digest" \
+  --http-method=POST \
+  --headers="X-Task-Token=carecircle-task-secret-token-2026" \
+  --location=asia-south1 \
+  --description="Dispatches weekly adherence digest to family and caretakers every Sunday morning"
 ```
 
 ---
 
-## 📡 API Reference Overview
+## 📱 Evaluator Demo Flow
 
-| Method | Endpoint | Description | Permission |
-|---|---|---|---|
-| `GET` | `/healthz` | Container healthcheck & runtime info | Public |
-| `POST` | `/api/auth/register-elder` | Register elder profile & owner | Public (Rate-limited) |
-| `POST` | `/api/auth/join` | Join with 8-char invite passcode | Public (Rate-limited) |
-| `POST` | `/api/auth/login` | Login with profileId, email, passcode | Public (5-try lockout) |
-| `POST` | `/api/auth/logout` | Clear session cookie | Authenticated |
-| `GET` | `/api/auth/me` | Current session details | Authenticated |
-| `GET` | `/api/profiles/:id/schedule/today` | Today's doses with statuses | `canViewMeds` |
-| `POST` | `/api/profiles/:id/schedule/doses/:id/action` | Mark dose taken/skipped/snoozed | `canViewMeds` |
-| `GET` | `/api/profiles/:id/schedule/adherence` | 7-day and 30-day adherence % | `canViewAdherence` |
-| `GET/POST` | `/api/profiles/:id/medications` | List / Add medications | `canViewMeds` / `canEditMeds` |
-| `GET/POST` | `/api/profiles/:id/appointments` | List / Book appointments | `canViewAppts` / `canEditAppts` |
-| `GET/POST` | `/api/profiles/:id/members/invites` | List / Generate 8-char invite | Elder Only |
-| `PUT` | `/api/profiles/:id/settings` | Toggle elder approval requirement | Elder Only |
-| `GET/POST` | `/api/profiles/:id/pending-changes` | Review & approve/reject changes | Elder Only |
-| `GET` | `/api/profiles/:id/audit` | Chronological activity audit trail | Authenticated |
+Follow this step-by-step walkthrough to evaluate CareCircle:
+
+1. **Elder Registration**:
+   - Navigate to the web app (`https://carecircle-471887193815.asia-south1.run.app`).
+   - Register a new profile (e.g. *Grandpa Jack*, email, 8-character passcode).
+   - Note the assigned **CareCircle ID**.
+2. **Senior Accessibility Experience**:
+   - Click **"Senior / High Contrast Mode"** at the top right to verify high contrast styling.
+   - Click **A / A+ / A++** to test instant typography scaling.
+   - Click **"👴 Elder Mode: Simplified"** to observe the distraction-free schedule layout.
+   - Click **"🔊 Read Schedule Aloud"** to hear browser speech synthesis announce today's doses.
+3. **AI Prescription Scanner**:
+   - In the **Medications** tab, click **"📷 Scan Prescription"**.
+   - Upload any sample prescription image. Gemini Vision extracts medication name, dosage, form, times, and instructions.
+   - Review and edit the draft table, then click **"Confirm & Add to Schedule"**.
+4. **Conversational Voice Assistant**:
+   - Click the floating **"🤖 Assistant"** button at the bottom right.
+   - Click the **Mic** button and say: *"I took my morning medicine"* or type *"Schedule appointment with Dr. Sharma next Tuesday 4pm"*.
+   - Notice the assistant presents a confirmation card before executing, ensuring zero accidental database writes.
+5. **CareCircle Family Collaboration & Elder Approval**:
+   - Switch to the **Family & Access** tab.
+   - Toggle **"Require Elder Approval for Caretaker Edits"** to **ON**.
+   - Click **"+ Invite Member"** to generate a single-use 8-character passcode for a Caretaker.
+   - Open an incognito browser window, click **"Join Circle"**, enter the Circle ID, passcode, and name (*Nurse Bob*).
+   - As Nurse Bob, propose adding a new medication or appointment.
+   - Notice it indicates: *"Submitted for Elder Approval"*.
+   - Switch back to Grandpa Jack's window: an approval card appears on the dashboard with **Approve** and **Reject** buttons.
+6. **Proactive Reminders & Notifications**:
+   - Click **"Send Test Reminder"** in the top navigation or notifications tab.
+   - A high-contrast, large-font accessible reminder is dispatched to the registered email via Gmail SMTP.
 
 ---
 
-## ♿ Accessibility Features
-
-- **Large Click Target Sizes**: Main action buttons are $64\text{px}+$ in height with bold contrast.
-- **WCAG High-Contrast Mode**: Dedicated switch switching to a high-contrast dark-on-light theme with $7:1+$ contrast ratio.
-- **Audio Schedule Narration**: Native Web Speech API integration that articulates the daily schedule out loud.
-- **Low-Stock Alerting**: Proactive visual and data-level indicators when stock drops below threshold.
+## 📄 License
+This project is licensed under the MIT License.

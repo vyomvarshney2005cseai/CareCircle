@@ -3,29 +3,42 @@
  * Uses Web Speech API to read aloud medication schedules and instructions.
  */
 const speech = {
-  isSupported() {
+  isSynthesisSupported() {
     return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
   },
 
+  isRecognitionSupported() {
+    return 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
+  },
+
+  isSupported() {
+    return this.isSynthesisSupported();
+  },
+
   /**
-   * Speak a given text string.
+   * Speak a given text string with graceful degradation.
    * @param {string} text
    */
   speak(text) {
-    if (!this.isSupported()) {
-      // eslint-disable-next-line no-alert
-      alert('Speech synthesis is not supported on this browser.');
+    if (!this.isSynthesisSupported()) {
+      if (typeof ui !== 'undefined' && ui.showAlert) {
+        ui.showAlert('Audio readout is not supported by your browser.', 'info');
+      }
       return;
     }
 
-    window.speechSynthesis.cancel(); // Stop any ongoing speech
+    try {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9; // Slightly slower, easy to understand for elderly
-    utterance.pitch = 1.0;
-    utterance.lang = 'en-US';
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.88; // Slightly deliberate cadence for seniors
+      utterance.pitch = 1.0;
+      utterance.lang = 'en-US';
 
-    window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(utterance);
+    } catch (err) {
+      console.warn('Speech synthesis error:', err);
+    }
   },
 
   /**
@@ -58,5 +71,36 @@ const speech = {
 
     message += 'Remember to stay hydrated and take your medicine on time.';
     this.speak(message);
+  },
+
+  /**
+   * Listen to user speech using Web Speech Recognition.
+   * @param {function(string): void} onResult
+   * @param {function(any): void} onError
+   * @returns {any}
+   */
+  startListening(onResult, onError) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      if (onError) onError(new Error('Speech recognition is not supported in this browser.'));
+      return null;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'en-US';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onresult = (event) => {
+      const text = event.results[0][0].transcript;
+      if (onResult) onResult(text);
+    };
+
+    recognition.onerror = (err) => {
+      if (onError) onError(err);
+    };
+
+    recognition.start();
+    return recognition;
   }
 };

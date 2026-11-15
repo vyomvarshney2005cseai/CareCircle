@@ -3,7 +3,7 @@
   --bg-surface: #ffffff;
   --bg-subtle: #f1f5f9;
   --text-main: #0f172a;
-  --text-muted: #475569;
+  --text-muted: #334155;
   --text-inverse: #ffffff;
   --primary: #0284c7;
   --primary-hover: #0369a1;
@@ -15,30 +15,98 @@
   --warning-light: #fef3c7;
   --danger: #b91c1c;
   --danger-light: #fee2e2;
-  --border: #cbd5e1;
+  --border: #94a3b8;
   --border-focus: #0284c7;
   --radius: 12px;
   --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
   --font-base: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --btn-height: 48px;
-  --font-size-base: 16px;
+  /* WCAG 2.1 AA Senior Requirement: Base font 20px+ */
+  --font-size-base: 20px;
 }
 
-/* Senior Accessibility Mode (High-contrast, huge text, maximum touch targets) */
-body.senior-mode {
+/* Accessible Text Sizing Controls */
+body[data-text-size="md"] {
   --font-size-base: 20px;
-  --btn-height: 64px;
-  --text-main: #000000;
-  --text-muted: #1e293b;
-  --border: #475569;
-  --border-focus: #000000;
-  --primary: #0369a1;
-  --success: #14532d;
-  --success-light: #bbf7d0;
-  --warning: #78350f;
-  --danger: #7f1d1d;
-  --bg-primary: #f1f5f9;
+}
+
+body[data-text-size="lg"] {
+  --font-size-base: 24px;
+}
+
+body[data-text-size="xl"] {
+  --font-size-base: 28px;
+}
+
+/* High Contrast Mode (WCAG AAA Inspired >7:1 contrast ratio) */
+body.high-contrast {
+  --bg-primary: #ffffff !important;
+  --bg-surface: #ffffff !important;
+  --bg-subtle: #f8fafc !important;
+  --text-main: #000000 !important;
+  --text-muted: #111827 !important;
+  --border: #000000 !important;
+  --border-focus: #000000 !important;
+  --primary: #003e73 !important;
+  --primary-hover: #002244 !important;
+  --primary-light: #e2e8f0 !important;
+  --success: #054e1a !important;
+  --success-hover: #033611 !important;
+  --success-light: #d1fae5 !important;
+  --warning: #713f12 !important;
+  --warning-light: #fef08a !important;
+  --danger: #7f1d1d !important;
+  --danger-light: #fecaca !important;
+}
+
+body.high-contrast * {
+  border-color: #000000 !important;
+}
+
+body.high-contrast .card,
+body.high-contrast .dose-card,
+body.high-contrast .modal-card,
+body.high-contrast .stat-box {
+  border: 3px solid #000000 !important;
+  box-shadow: none !important;
+}
+
+body.high-contrast .btn {
+  border: 2px solid #000000 !important;
+  font-weight: 800 !important;
+}
+
+/* Motion Accessibility (WCAG 2.1 AA 2.3.3) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Dark Mode (When High Contrast is not forced) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.high-contrast) {
+    --bg-primary: #090d16;
+    --bg-surface: #131c2e;
+    --bg-subtle: #1e293b;
+    --text-main: #f8fafc;
+    --text-muted: #cbd5e1;
+    --border: #475569;
+    --primary: #38bdf8;
+    --primary-hover: #7dd3fc;
+    --primary-light: #082f49;
+    --success: #4ade80;
+    --success-hover: #86efac;
+    --success-light: #064e3b;
+    --warning: #facc15;
+    --warning-light: #422006;
+    --danger: #f87171;
+    --danger-light: #450a0a;
+  }
 }
 
 * {
@@ -52,40 +120,194 @@ body {
   font-size: var(--font-size-base);
   color: var(--text-main);
   background-color: var(--bg-primary);
-  line-height: 1.5;
+  line-height: 1.6;
   min-height: 100vh;
 }
 
-/* Senior Mode Banner */
+/* Screen Reader Only Utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip-to-content Link (WCAG 2.1 AA 2.4.1) */
+.skip-link {
+  position: absolute;
+  top: -120px;
+  left: 20px;
+  background-color: #000000;
+  color: #ffffff;
+  padding: 14px 24px;
+  font-size: 1.1em;
+  font-weight: 700;
+  border: 3px solid #facc15;
+  border-radius: 8px;
+  z-index: 99999;
+  text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  transition: top 0.2s;
+}
+
+.skip-link:focus {
+  top: 16px;
+  outline: 4px solid #0284c7;
+  outline-offset: 4px;
+}
+
+/* Visible Keyboard Focus Ring (WCAG 2.1 AA 2.4.7) */
+:focus-visible {
+  outline: 3px solid #0284c7 !important;
+  outline-offset: 3px !important;
+}
+
+body.high-contrast :focus-visible {
+  outline: 4px solid #000000 !important;
+  outline-offset: 3px !important;
+}
+
+/* Senior Accessibility Bar (Always accessible at top) */
 .senior-bar {
   background-color: #0f172a;
   color: #ffffff;
-  padding: 8px 16px;
+  padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
   font-size: 0.95em;
+  border-bottom: 2px solid #334155;
 }
 
-.senior-bar button {
-  background: #334155;
-  color: #fff;
-  border: 1px solid #64748b;
-  padding: 6px 14px;
-  border-radius: 6px;
+.senior-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.senior-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Text Size Control Buttons */
+.text-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-text-size {
+  min-width: 48px;
+  min-height: 48px;
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 2px solid #64748b;
+  border-radius: 8px;
+  font-weight: 700;
   cursor: pointer;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s, border-color 0.15s;
 }
 
-.senior-bar button:hover {
-  background: #475569;
+.btn-text-size:hover {
+  background-color: #334155;
+  border-color: #94a3b8;
+}
+
+.btn-text-size.active {
+  background-color: #0284c7;
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px #0284c7;
+}
+
+.senior-bar-btn {
+  min-height: 48px;
+  padding: 8px 18px;
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 2px solid #64748b;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: background-color 0.15s;
+}
+
+.senior-bar-btn:hover {
+  background-color: #334155;
+}
+
+.senior-bar-btn.active {
+  background-color: #facc15;
+  color: #000000;
+  border-color: #ffffff;
+}
+
+/* Simplified Elder Mode View */
+.elder-mode-banner {
+  background-color: #fef3c7;
+  border: 3px solid #b45309;
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 1.1em;
+  color: #78350f;
+}
+
+body.elder-mode .app-nav {
+  display: none !important;
+}
+
+body.elder-mode .adherence-grid,
+body.elder-mode #pending-approvals-banner,
+body.elder-mode #next-appointment-banner,
+body.elder-mode .ai-chat-dock,
+body.elder-mode .app-header .header-user-section #header-btn-test-reminder {
+  display: none !important;
+}
+
+body.elder-mode .dose-card {
+  padding: 28px !important;
+  margin-bottom: 24px !important;
+  border-width: 3px !important;
+}
+
+body.elder-mode .dose-med-name {
+  font-size: 1.8em !important;
+  font-weight: 900 !important;
+}
+
+body.elder-mode .btn-huge-take {
+  min-height: 76px !important;
+  font-size: 1.4em !important;
+  letter-spacing: 1px !important;
 }
 
 /* App Header */
 header.app-header {
   background-color: var(--bg-surface);
   border-bottom: 2px solid var(--border);
-  padding: 16px 24px;
+  padding: 18px 24px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -97,24 +319,25 @@ header.app-header {
 .brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .brand-logo {
-  width: 44px;
-  height: 44px;
+  width: 52px;
+  height: 52px;
   background: linear-gradient(135deg, #0284c7, #0d9488);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
-  border-radius: 10px;
+  font-size: 28px;
+  border-radius: 12px;
   font-weight: bold;
+  flex-shrink: 0;
 }
 
 .brand-title {
-  font-size: 1.4em;
+  font-size: 1.5em;
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.5px;
@@ -574,3 +797,344 @@ textarea.form-control {
   justify-content: space-between;
   align-items: center;
 }
+
+/* ==========================================================================
+   AI Features & Accessible Chat Panel
+   ========================================================================== */
+
+/* AI Care Insight Card */
+.ai-insight-card {
+  background: linear-gradient(135deg, #f0fdf4 0%, #eff6ff 100%);
+  border: 2px solid #38bdf8;
+  border-left: 6px solid #0284c7;
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  margin-bottom: 24px;
+}
+
+.ai-insight-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  font-size: 1.1em;
+  color: #0369a1;
+}
+
+.ai-insight-body {
+  font-size: 1.05em;
+  color: var(--text-main);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+
+.ai-insight-tip {
+  font-size: 0.9em;
+  color: var(--text-muted);
+}
+
+/* Floating AI Chat Assistant Widget */
+.ai-chat-dock {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 990;
+}
+
+.ai-chat-toggle-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  color: #ffffff;
+  border: 2px solid #ffffff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  border-radius: 30px;
+  padding: 14px 22px;
+  font-size: 1.05em;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.ai-chat-toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.ai-chat-panel {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 520px;
+  max-height: calc(100vh - 120px);
+  background-color: var(--bg-surface);
+  border: 2px solid var(--border);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 995;
+}
+
+.ai-chat-header {
+  background-color: #0284c7;
+  color: #ffffff;
+  padding: 14px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+}
+
+.ai-chat-header button {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1.4em;
+  cursor: pointer;
+}
+
+.ai-chat-messages {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background-color: var(--bg-subtle);
+}
+
+.ai-bubble {
+  max-width: 85%;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 0.95em;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ai-bubble.assistant {
+  align-self: flex-start;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-top-left-radius: 2px;
+}
+
+.ai-bubble.user {
+  align-self: flex-end;
+  background-color: #0284c7;
+  color: #ffffff;
+  border-top-right-radius: 2px;
+}
+
+/* AI Action Confirmation Card */
+.ai-action-card {
+  align-self: flex-start;
+  background-color: #fffbeb;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 14px;
+  width: 95%;
+  box-sizing: border-box;
+}
+
+.ai-action-card-title {
+  font-weight: 700;
+  color: #92400e;
+  margin-bottom: 6px;
+  font-size: 1em;
+}
+
+.ai-action-card-body {
+  font-size: 0.9em;
+  color: #78350f;
+  margin-bottom: 12px;
+}
+
+.ai-action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.ai-action-buttons button {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+}
+
+.ai-btn-confirm {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.ai-btn-cancel {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+
+.ai-chat-input-bar {
+  padding: 12px;
+  background-color: var(--bg-surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.ai-chat-input-bar input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.95em;
+  outline: none;
+}
+
+.ai-chat-input-bar input:focus {
+  border-color: #0284c7;
+}
+
+.ai-mic-btn {
+  background-color: #f1f5f9;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.1em;
+  flex-shrink: 0;
+}
+
+.ai-mic-btn.listening {
+  background-color: #fee2e2;
+  border-color: #ef4444;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.ai-send-btn {
+  background-color: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Prescription Scanner Review Table */
+.scan-dropzone {
+  border: 2px dashed #94a3b8;
+  border-radius: 12px;
+  padding: 28px;
+  text-align: center;
+  background-color: var(--bg-subtle);
+  cursor: pointer;
+  margin-bottom: 20px;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.scan-dropzone:hover {
+  border-color: #0284c7;
+  background-color: #f0f9ff;
+}
+
+.scan-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 0.9em;
+}
+
+.scan-table th, .scan-table td {
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.scan-table th {
+  background-color: var(--bg-subtle);
+  font-weight: 700;
+}
+
+.scan-table input, .scan-table select {
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Safety Check Pill & Findings */
+.safety-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.safety-badge.none {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.safety-badge.low {
+  background-color: #e0f2fe;
+  color: #075985;
+  border: 1px solid #7dd3fc;
+}
+
+.safety-badge.moderate {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+}
+
+.safety-badge.high {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.safety-finding-item {
+  background-color: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.safety-disclaimer-box {
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.85em;
+  color: #991b1b;
+  margin-top: 16px;
+  line-height: 1.4;
+}
+

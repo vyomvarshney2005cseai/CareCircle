@@ -6,6 +6,7 @@ class RepositoryInterface {
   async getProfile(profileId) { throw new Error('Not implemented'); }
   async createProfile(profileData) { throw new Error('Not implemented'); }
   async updateProfile(profileId, profileData) { throw new Error('Not implemented'); }
+  async listProfiles() { throw new Error('Not implemented'); }
 
   // Members
   async getMemberById(profileId, memberId) { throw new Error('Not implemented'); }
@@ -42,6 +43,7 @@ class RepositoryInterface {
   // Notifications (Idempotent keys)
   async getNotification(profileId, key) { throw new Error('Not implemented'); }
   async saveNotification(profileId, key, notificationData) { throw new Error('Not implemented'); }
+  async listNotifications(profileId, limit = 50) { throw new Error('Not implemented'); }
 
   // Audit Logs
   async createAuditLog(profileId, auditData) { throw new Error('Not implemented'); }

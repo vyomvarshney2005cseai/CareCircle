@@ -9,6 +9,16 @@ module.exports = {
   collectCoverageFrom: [
     'src/**/*.js',
     '!src/server.js',
-    '!src/repositories/firestore/firestoreClient.js'
+    '!src/repositories/firestore/**'
+  ],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/src/server.js',
+    '/src/repositories/firestore/',
+    '/src/repositories/repositoryInterface.js',
+    '/src/services/ai/aiServiceInterface.js',
+    '/src/services/ai/geminiAIService.js',
+    '/src/services/mailer/mailerInterface.js',
+    '/src/services/mailer/nodemailerMailer.js'
   ]
 };

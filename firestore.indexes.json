@@ -1,0 +1,51 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "doseLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "medicationId", "order": "ASCENDING" },
+        { "fieldPath": "scheduledFor", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "doseLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "scheduledFor", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "medications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "active", "order": "ASCENDING" },
+        { "fieldPath": "name", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "appointments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "dateTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "sentAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "auditLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

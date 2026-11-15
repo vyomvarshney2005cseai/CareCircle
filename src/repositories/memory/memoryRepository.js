@@ -42,6 +42,10 @@ class MemoryRepository extends RepositoryInterface {
     return clone(profile) || null;
   }
 
+  async listProfiles() {
+    return Array.from(this.profiles.values()).map(clone);
+  }
+
   async createProfile(profileData) {
     const id = profileData.id || crypto.randomUUID();
     const now = new Date().toISOString();
@@ -301,6 +305,12 @@ class MemoryRepository extends RepositoryInterface {
     };
     notifMap.set(key, record);
     return clone(record);
+  }
+
+  async listNotifications(profileId, limit = 50) {
+    const notifMap = this._getSubMap(this.notifications, profileId);
+    const list = Array.from(notifMap.values()).sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+    return list.slice(0, limit).map(clone);
   }
 
   // --- Audit Logs ---

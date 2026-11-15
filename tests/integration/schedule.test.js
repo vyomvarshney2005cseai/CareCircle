@@ -1,11 +1,9 @@
 const request = require('supertest');
 const { app, clearDatabase, createTestElder } = require('../testHelper');
-const { getLocalDateString } = require('../../src/utils/dateUtils');
 
 describe('Schedule & Adherence Engine', () => {
   let elder;
   let profileId;
-  let medId;
 
   beforeEach(async () => {
     await clearDatabase();
@@ -13,7 +11,7 @@ describe('Schedule & Adherence Engine', () => {
     profileId = elder.profile.id;
 
     // Create daily medication covering every day of the week
-    const medRes = await request(app)
+    await request(app)
       .post(`/api/profiles/${profileId}/medications`)
       .set('Authorization', `Bearer ${elder.token}`)
       .send({
@@ -27,8 +25,6 @@ describe('Schedule & Adherence Engine', () => {
         stockCount: 10,
         refillThreshold: 3
       });
-
-    medId = medRes.body.data.id;
   });
 
   it('generates today schedule and decrements stock when dose is taken', async () => {

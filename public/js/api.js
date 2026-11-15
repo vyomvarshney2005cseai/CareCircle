@@ -8,13 +8,15 @@ const api = {
    * @param {RequestInit} [options={}]
    */
   async request(endpoint, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (!(options.body instanceof FormData) && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const config = {
       credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers || {})
-      },
-      ...options
+      ...options,
+      headers
     };
 
     if (config.body && typeof config.body === 'object' && !(config.body instanceof FormData)) {
@@ -135,6 +137,38 @@ const api = {
     return this.request(`/api/profiles/${profileId}/pending-changes/${changeId}/review`, {
       method: 'POST',
       body: { action, rejectionReason }
+    });
+  },
+
+  // Proactive Notifications & Reminders
+  sendTestReminder(profileId) {
+    return this.request(`/api/profiles/${profileId}/notifications/test`, { method: 'POST' });
+  },
+  getNotifications(profileId) {
+    return this.request(`/api/profiles/${profileId}/notifications`, { method: 'GET' });
+  },
+
+  // Google Gemini AI Endpoints
+  scanPrescription(formData) {
+    return this.request('/api/ai/scan-prescription', {
+      method: 'POST',
+      body: formData
+    });
+  },
+  sendAssistantMessage(payload) {
+    return this.request('/api/ai/assistant', {
+      method: 'POST',
+      body: payload
+    });
+  },
+  checkInteractions() {
+    return this.request('/api/ai/interaction-check', {
+      method: 'POST'
+    });
+  },
+  getAdherenceInsight() {
+    return this.request('/api/ai/adherence-insight', {
+      method: 'GET'
     });
   }
 };

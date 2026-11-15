@@ -130,4 +130,40 @@ describe('Elder-Centred Approval Workflow (Pending Changes)', () => {
     const approvalAudit = auditRes.body.data.find((a) => a.action === 'APPROVE_CHANGE');
     expect(approvalAudit).toBeDefined();
   });
+
+  it('allows elder to reject a proposed change with reason', async () => {
+    // 1. Enable approval requirement
+    await request(app)
+      .put(`/api/profiles/${profileId}/settings`)
+      .set('Authorization', `Bearer ${elder.token}`)
+      .send({ requireElderApprovalForEdits: true });
+
+    // 2. Caretaker proposes appointment
+    const propRes = await request(app)
+      .post(`/api/profiles/${profileId}/appointments`)
+      .set('Authorization', `Bearer ${caretakerToken}`)
+      .send({
+        doctorName: 'Dr. Unwanted',
+        specialty: 'Surgery',
+        location: 'Downtown Hospital',
+        dateTime: '2026-11-25T14:00:00.000Z',
+        status: 'scheduled'
+      });
+
+    expect(propRes.status).toBe(202);
+    const pendingId = propRes.body.data.pendingChangeId;
+
+    // 3. Elder rejects the change
+    const rejectRes = await request(app)
+      .post(`/api/profiles/${profileId}/pending-changes/${pendingId}/review`)
+      .set('Authorization', `Bearer ${elder.token}`)
+      .send({
+        action: 'reject',
+        rejectionReason: 'Doctor is out of network'
+      });
+
+    expect(rejectRes.status).toBe(200);
+    expect(rejectRes.body.data.status).toBe('rejected');
+    expect(rejectRes.body.data.rejectionReason).toBe('Doctor is out of network');
+  });
 });

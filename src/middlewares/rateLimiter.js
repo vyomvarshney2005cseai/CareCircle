@@ -35,7 +35,29 @@ const authLimiter = rateLimit({
   skip: () => config.env === 'test'
 });
 
+/**
+ * Per-user rate limiter for Google Gemini AI endpoints.
+ * Keyed by authenticated member ID with IP fallback.
+ */
+const aiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: config.aiRateLimitMax,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.user?.memberId || req.ip;
+  },
+  message: {
+    error: {
+      code: 'AI_RATE_LIMIT_EXCEEDED',
+      message: 'Too many AI requests. Please slow down and try again shortly.'
+    }
+  },
+  skip: () => config.env === 'test'
+});
+
 module.exports = {
   apiLimiter,
-  authLimiter
+  authLimiter,
+  aiLimiter
 };
