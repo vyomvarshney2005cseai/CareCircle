@@ -67,6 +67,7 @@ app.get('/healthz', (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     dataStore: config.dataStore,
+    commit: process.env.COMMIT_SHA || process.env.K_REVISION || 'main',
     version: '1.0.0'
   });
 });
