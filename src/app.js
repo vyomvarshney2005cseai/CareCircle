@@ -61,7 +61,7 @@ app.use(cookieParser(config.cookieSecret));
 app.use(compression());
 
 // Health check endpoint (for Cloud Run & Docker)
-app.get('/healthz', (req, res) => {
+app.get(['/healthz', '/api/healthz'], (req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),

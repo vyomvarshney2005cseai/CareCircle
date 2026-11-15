@@ -10,5 +10,9 @@ describe('Health Check Endpoint', () => {
     expect(res.body.uptime).toBeDefined();
     expect(res.body.commit).toBeDefined();
     expect(res.body.dataStore).toBeDefined();
+
+    const apiRes = await request(app).get('/api/healthz');
+    expect(apiRes.status).toBe(200);
+    expect(apiRes.body.status).toBe('ok');
   });
 });
