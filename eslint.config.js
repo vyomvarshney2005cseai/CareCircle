@@ -49,6 +49,8 @@ module.exports = [
         SpeechSynthesisUtterance: 'readonly',
         webkitSpeechRecognition: 'readonly',
         SpeechRecognition: 'readonly',
+        Blob: 'readonly',
+        URL: 'readonly',
         ui: 'writable',
         auth: 'writable',
         api: 'writable',
@@ -61,7 +63,7 @@ module.exports = [
         'error',
         {
           argsIgnorePattern: '^(req|res|next|_)',
-          varsIgnorePattern: '^_',
+          varsIgnorePattern: '^(api|auth|app|speech|ui|_)',
           caughtErrors: 'none'
         }
       ],

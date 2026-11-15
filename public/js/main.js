@@ -332,12 +332,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       });
     });
   }
-        startDate: new Date().toISOString().slice(0, 10),
-        stockCount: parseInt(document.getElementById('med-stock').value, 10) || 0,
-        refillThreshold: parseInt(document.getElementById('med-threshold').value, 10) || 0
-      });
-    });
-  }
 
   // Add Appointment submit
   const formAddAppt = document.getElementById('form-add-appt');
