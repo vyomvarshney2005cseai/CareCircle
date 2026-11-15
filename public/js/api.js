@@ -28,7 +28,14 @@ const api = {
     const data = isJson ? await response.json() : null;
 
     if (!response.ok) {
-      const err = new Error(data?.error?.message || `Request failed with status ${response.status}`);
+      let message = data?.error?.message || `Request failed with status ${response.status}`;
+      if (data?.error?.details && Array.isArray(data.error.details) && data.error.details.length > 0) {
+        const detailStr = data.error.details
+          .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
+          .join('; ');
+        message = `${message} (${detailStr})`;
+      }
+      const err = new Error(message);
       err.status = response.status;
       err.code = data?.error?.code || 'UNKNOWN_ERROR';
       err.details = data?.error?.details;

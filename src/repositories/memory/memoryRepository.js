@@ -307,6 +307,11 @@ class MemoryRepository extends RepositoryInterface {
     return clone(record);
   }
 
+  async deleteNotification(profileId, key) {
+    const notifMap = this._getSubMap(this.notifications, profileId);
+    return notifMap.delete(key);
+  }
+
   async listNotifications(profileId, limit = 50) {
     const notifMap = this._getSubMap(this.notifications, profileId);
     const list = Array.from(notifMap.values()).sort((a, b) => b.sentAt.localeCompare(a.sentAt));

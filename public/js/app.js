@@ -476,6 +476,8 @@ window.app = {
   },
 
   async handleAddMedication(formData) {
+    const errEl = document.getElementById('modal-add-med-error');
+    if (errEl) errEl.classList.add('hidden');
     try {
       const res = await api.createMedication(auth.profile.id, formData);
       if (res.pending) {
@@ -483,9 +485,15 @@ window.app = {
       } else {
         ui.showAlert('Medication added successfully!', 'success');
       }
+      const form = document.getElementById('form-add-med');
+      if (form) form.reset();
       ui.closeModal('modal-add-med');
       await this.loadAllData();
     } catch (err) {
+      if (errEl) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+      }
       ui.showAlert(err.message, 'error');
     }
   },
@@ -669,6 +677,8 @@ window.app = {
   },
 
   async handleAddAppointment(formData) {
+    const errEl = document.getElementById('modal-add-appt-error');
+    if (errEl) errEl.classList.add('hidden');
     try {
       const res = await api.createAppointment(auth.profile.id, formData);
       if (res.pending) {
@@ -676,9 +686,15 @@ window.app = {
       } else {
         ui.showAlert('Doctor appointment booked!', 'success');
       }
+      const form = document.getElementById('form-add-appt');
+      if (form) form.reset();
       ui.closeModal('modal-add-appt');
       await this.loadAllData();
     } catch (err) {
+      if (errEl) {
+        errEl.textContent = err.message;
+        errEl.classList.remove('hidden');
+      }
       ui.showAlert(err.message, 'error');
     }
   },

@@ -608,6 +608,16 @@ textarea.form-control {
 }
 
 /* 10. Alert Banners & Toasts */
+#toast-notification {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  max-width: 480px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
+  animation: modalSlideUp 0.2s ease-out;
+}
+
 .alert-banner {
   display: flex;
   align-items: flex-start;

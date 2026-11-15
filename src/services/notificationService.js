@@ -40,10 +40,7 @@ class NotificationService {
       return { sent: false, duplicate: true, key: idempotencyKey };
     }
 
-    // Dispatch via mailer with 3-attempt exponential backoff
-    const sendResult = await sendWithRetry(mailOptions);
-
-    // Save notification record
+    // Atomically pre-record the idempotency key to prevent race conditions during concurrent scheduler ticks
     await repo.saveNotification(profileId, idempotencyKey, {
       key: idempotencyKey,
       profileId,
@@ -51,12 +48,34 @@ class NotificationService {
       subject: mailOptions.subject,
       type: meta.type || 'REMINDER',
       entityId: meta.entityId || null,
-      messageId: sendResult?.messageId,
+      status: 'sending',
       sentAt: new Date().toISOString()
     });
 
-    logger.info({ profileId, key: idempotencyKey, to: mailOptions.to }, 'Proactive notification delivered successfully');
-    return { sent: true, duplicate: false, key: idempotencyKey };
+    try {
+      // Dispatch via mailer with 3-attempt exponential backoff
+      const sendResult = await sendWithRetry(mailOptions);
+
+      // Finalize notification record with delivery message ID
+      await repo.saveNotification(profileId, idempotencyKey, {
+        key: idempotencyKey,
+        profileId,
+        targetEmail: mailOptions.to,
+        subject: mailOptions.subject,
+        type: meta.type || 'REMINDER',
+        entityId: meta.entityId || null,
+        messageId: sendResult?.messageId,
+        status: 'delivered',
+        sentAt: new Date().toISOString()
+      });
+
+      logger.info({ profileId, key: idempotencyKey, to: mailOptions.to }, 'Proactive notification delivered successfully');
+      return { sent: true, duplicate: false, key: idempotencyKey };
+    } catch (err) {
+      // If delivery failed after all retry attempts, release the key so subsequent runs can retry
+      await repo.deleteNotification(profileId, idempotencyKey);
+      throw err;
+    }
   }
 
   /**

@@ -204,7 +204,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       e.preventDefault();
       const dowNodes = document.querySelectorAll('input[name="dow"]:checked');
       const daysOfWeek = Array.from(dowNodes).map((n) => parseInt(n.value, 10));
-      const times = document.getElementById('med-times').value.split(',').map((t) => t.trim()).filter(Boolean);
+      if (daysOfWeek.length === 0) {
+        ui.showAlert('Please select at least one day of the week.', 'error');
+        return;
+      }
+      const rawTimes = document.getElementById('med-times').value.split(',').map((t) => t.trim()).filter(Boolean);
+      if (rawTimes.length === 0) {
+        ui.showAlert('Please enter at least one scheduled time (e.g. 08:00 or 14:00).', 'error');
+        return;
+      }
+      const times = rawTimes.map((t) => {
+        const parts = t.split(':');
+        if (parts.length === 2) {
+          return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+        }
+        return t;
+      });
 
       app.handleAddMedication({
         name: document.getElementById('med-name').value.trim(),
@@ -214,8 +229,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         times,
         daysOfWeek,
         startDate: new Date().toISOString().slice(0, 10),
-        stockCount: parseInt(document.getElementById('med-stock').value, 10),
-        refillThreshold: parseInt(document.getElementById('med-threshold').value, 10)
+        stockCount: parseInt(document.getElementById('med-stock').value, 10) || 0,
+        refillThreshold: parseInt(document.getElementById('med-threshold').value, 10) || 0
       });
     });
   }
@@ -226,11 +241,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     formAddAppt.addEventListener('submit', (e) => {
       e.preventDefault();
       const dt = document.getElementById('appt-datetime').value;
+      if (!dt) {
+        ui.showAlert('Please select appointment date and time.', 'error');
+        return;
+      }
+      const parsed = new Date(dt);
+      if (isNaN(parsed.getTime())) {
+        ui.showAlert('Invalid date and time selected.', 'error');
+        return;
+      }
       app.handleAddAppointment({
         doctorName: document.getElementById('appt-doctor').value.trim(),
         specialty: document.getElementById('appt-specialty').value.trim(),
         location: document.getElementById('appt-location').value.trim(),
-        dateTime: new Date(dt).toISOString(),
+        dateTime: parsed.toISOString(),
         notes: document.getElementById('appt-notes').value.trim(),
         status: 'scheduled'
       });

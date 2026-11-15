@@ -1,7 +1,7 @@
 const { z } = require('zod');
 const { ROLES } = require('../constants/roles');
 
-const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+const timeRegex = /^([0-1]?\d|2[0-3]):[0-5]\d$/;
 const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 const registerElderSchema = z.object({
@@ -43,7 +43,15 @@ const medicationSchema = z.object({
   dosage: z.string().trim().min(1, 'Dosage is required (e.g. 500mg, 1 tablet)'),
   form: z.string().trim().min(1, 'Form is required (e.g. pill, syrup, injection)'),
   instructions: z.string().trim().default('Take with water'),
-  times: z.array(z.string().regex(timeRegex, 'Time must be in HH:mm format')).min(1, 'At least one scheduled time is required'),
+  times: z.array(
+    z.string()
+      .trim()
+      .regex(timeRegex, 'Time must be in HH:mm format (e.g. 08:00 or 14:30)')
+      .transform((t) => {
+        const parts = t.split(':');
+        return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+      })
+  ).min(1, 'At least one scheduled time is required'),
   daysOfWeek: z.array(z.number().int().min(0).max(6)).min(1, 'At least one day of week is required'),
   startDate: z.string().regex(dateRegex, 'Start date must be YYYY-MM-DD'),
   endDate: z.string().regex(dateRegex, 'End date must be YYYY-MM-DD').nullable().optional(),

@@ -296,6 +296,14 @@ class FirestoreRepository extends RepositoryInterface {
     return data;
   }
 
+  async deleteNotification(profileId, key) {
+    const docRef = this._profileDoc(profileId).collection('notifications').doc(key);
+    const snap = await docRef.get();
+    if (!snap.exists) return false;
+    await docRef.delete();
+    return true;
+  }
+
   async listNotifications(profileId, limit = 50) {
     const snap = await this._profileDoc(profileId)
       .collection('notifications')
