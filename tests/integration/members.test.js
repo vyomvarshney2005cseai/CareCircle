@@ -35,15 +35,13 @@ describe('CareCircle Member Management & Invite Revocation', () => {
     const inviteCode = inviteRes.body.data.inviteCode;
 
     // Join as caretaker
-    const joinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode,
-        name: 'Nurse Nancy',
-        email: 'nancy@carecircle.org',
-        passcode: 'nancyPass123'
-      });
+    const joinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode,
+      name: 'Nurse Nancy',
+      email: 'nancy@carecircle.org',
+      passcode: 'nancyPass123'
+    });
 
     caretakerToken = joinRes.body.data.token;
     caretakerMemberId = joinRes.body.data.member.id;

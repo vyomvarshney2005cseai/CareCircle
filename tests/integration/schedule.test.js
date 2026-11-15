@@ -57,7 +57,9 @@ describe('Schedule & Adherence Engine', () => {
       .get(`/api/profiles/${profileId}/schedule/today`)
       .set('Authorization', `Bearer ${elder.token}`);
 
-    const takenDose = updatedSchedRes.body.data.doses.find((d) => d.scheduledTime === doseToTake.scheduledTime);
+    const takenDose = updatedSchedRes.body.data.doses.find(
+      (d) => d.scheduledTime === doseToTake.scheduledTime
+    );
     expect(takenDose.status).toBe('taken');
   });
 

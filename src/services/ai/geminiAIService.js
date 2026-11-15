@@ -83,7 +83,9 @@ Return strictly JSON matching:
       return prescriptionScanResultSchema.parse(parsed);
     } catch (err) {
       logger.error({ err: err.message }, 'Gemini prescription scanning failed');
-      throw AppError.unprocessable('Failed to scan prescription with AI. Please review the image or enter manually.');
+      throw AppError.unprocessable(
+        'Failed to scan prescription with AI. Please review the image or enter manually.'
+      );
     }
   }
 
@@ -135,7 +137,8 @@ Return strictly JSON matching:
       // Fallback intent
       return {
         action: 'unknown',
-        reply: "I am having trouble connecting to AI services right now. You can view your schedule directly on the dashboard.",
+        reply:
+          'I am having trouble connecting to AI services right now. You can view your schedule directly on the dashboard.',
         params: {}
       };
     }
@@ -196,9 +199,11 @@ Return strictly JSON matching:
       logger.error({ err: err.message }, 'Gemini interaction check failed');
       return {
         severity: 'none',
-        summary: 'Unable to evaluate interactions at this time due to temporary AI service unavailability.',
+        summary:
+          'Unable to evaluate interactions at this time due to temporary AI service unavailability.',
         findings: [],
-        disclaimer: 'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
+        disclaimer:
+          'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
       };
     }
   }
@@ -236,7 +241,8 @@ Return strictly JSON matching:
     } catch (err) {
       logger.error({ err: err.message }, 'Gemini adherence insight generation failed');
       return {
-        insight: 'Taking medications at consistent daily milestones (like breakfast or dinner) builds long-lasting health habits.',
+        insight:
+          'Taking medications at consistent daily milestones (like breakfast or dinner) builds long-lasting health habits.',
         positiveNote: 'Every dose taken on time protects your well-being.',
         recommendation: 'Keep medications visible in a safe, routine spot.'
       };

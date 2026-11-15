@@ -6,7 +6,10 @@ dotenv.config();
 const configSchema = z.object({
   port: z.coerce.number().default(8080),
   env: z.enum(['development', 'production', 'test']).default('development'),
-  jwtSecret: z.string().min(16).default('carecircle-super-secure-secret-key-change-in-production-min32chars'),
+  jwtSecret: z
+    .string()
+    .min(16)
+    .default('carecircle-super-secure-secret-key-change-in-production-min32chars'),
   cookieSecret: z.string().min(16).default('carecircle-cookie-secret-key-min32chars'),
   dataStore: z.enum(['memory', 'firestore']).default('memory'),
   gcpProjectId: z.string().default('carecircle-hackathon'),
@@ -53,7 +56,9 @@ if (!parsed.success) {
 }
 
 if (parsed.data.env === 'production' && !process.env.JWT_SECRET) {
-  console.warn('[SECURITY WARNING] Running in production without custom JWT_SECRET. Using fallback key. Set JWT_SECRET in production environment variables.');
+  console.warn(
+    '[SECURITY WARNING] Running in production without custom JWT_SECRET. Using fallback key. Set JWT_SECRET in production environment variables.'
+  );
 }
 
 /**

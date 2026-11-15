@@ -103,7 +103,11 @@ class PendingChangeService {
       if (change.changeType === 'CREATE') {
         appliedResult = await repo.createMedication(profileId, change.proposedData);
       } else if (change.changeType === 'UPDATE') {
-        appliedResult = await repo.updateMedication(profileId, change.entityId, change.proposedData);
+        appliedResult = await repo.updateMedication(
+          profileId,
+          change.entityId,
+          change.proposedData
+        );
       } else if (change.changeType === 'DELETE') {
         appliedResult = await repo.deleteMedication(profileId, change.entityId);
       }
@@ -111,7 +115,11 @@ class PendingChangeService {
       if (change.changeType === 'CREATE') {
         appliedResult = await repo.createAppointment(profileId, change.proposedData);
       } else if (change.changeType === 'UPDATE') {
-        appliedResult = await repo.updateAppointment(profileId, change.entityId, change.proposedData);
+        appliedResult = await repo.updateAppointment(
+          profileId,
+          change.entityId,
+          change.proposedData
+        );
       } else if (change.changeType === 'DELETE') {
         appliedResult = await repo.deleteAppointment(profileId, change.entityId);
       }
@@ -121,7 +129,7 @@ class PendingChangeService {
       status: 'approved',
       reviewedAt: now,
       reviewedBy: actorElder.memberId,
-      appliedResult: appliedResult ? (appliedResult.id || true) : true
+      appliedResult: appliedResult ? appliedResult.id || true : true
     });
 
     await recordAudit(profileId, {

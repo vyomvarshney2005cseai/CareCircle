@@ -29,7 +29,11 @@ const api = {
 
     if (!response.ok) {
       let message = data?.error?.message || `Request failed with status ${response.status}`;
-      if (data?.error?.details && Array.isArray(data.error.details) && data.error.details.length > 0) {
+      if (
+        data?.error?.details &&
+        Array.isArray(data.error.details) &&
+        data.error.details.length > 0
+      ) {
         const detailStr = data.error.details
           .map((d) => {
             let fieldName = d.field || '';
@@ -101,10 +105,16 @@ const api = {
     return this.request(`/api/profiles/${profileId}/medications`, { method: 'GET' });
   },
   createMedication(profileId, payload) {
-    return this.request(`/api/profiles/${profileId}/medications`, { method: 'POST', body: payload });
+    return this.request(`/api/profiles/${profileId}/medications`, {
+      method: 'POST',
+      body: payload
+    });
   },
   updateMedication(profileId, medId, payload) {
-    return this.request(`/api/profiles/${profileId}/medications/${medId}`, { method: 'PUT', body: payload });
+    return this.request(`/api/profiles/${profileId}/medications/${medId}`, {
+      method: 'PUT',
+      body: payload
+    });
   },
   deleteMedication(profileId, medId) {
     return this.request(`/api/profiles/${profileId}/medications/${medId}`, { method: 'DELETE' });
@@ -115,10 +125,16 @@ const api = {
     return this.request(`/api/profiles/${profileId}/appointments`, { method: 'GET' });
   },
   createAppointment(profileId, payload) {
-    return this.request(`/api/profiles/${profileId}/appointments`, { method: 'POST', body: payload });
+    return this.request(`/api/profiles/${profileId}/appointments`, {
+      method: 'POST',
+      body: payload
+    });
   },
   updateAppointment(profileId, apptId, payload) {
-    return this.request(`/api/profiles/${profileId}/appointments/${apptId}`, { method: 'PUT', body: payload });
+    return this.request(`/api/profiles/${profileId}/appointments/${apptId}`, {
+      method: 'PUT',
+      body: payload
+    });
   },
   deleteAppointment(profileId, apptId) {
     return this.request(`/api/profiles/${profileId}/appointments/${apptId}`, { method: 'DELETE' });
@@ -129,7 +145,10 @@ const api = {
     return this.request(`/api/profiles/${profileId}/members`, { method: 'GET' });
   },
   updateMember(profileId, memberId, payload) {
-    return this.request(`/api/profiles/${profileId}/members/${memberId}`, { method: 'PUT', body: payload });
+    return this.request(`/api/profiles/${profileId}/members/${memberId}`, {
+      method: 'PUT',
+      body: payload
+    });
   },
   revokeMember(profileId, memberId) {
     return this.request(`/api/profiles/${profileId}/members/${memberId}`, { method: 'DELETE' });
@@ -138,10 +157,15 @@ const api = {
     return this.request(`/api/profiles/${profileId}/members/invites/list`, { method: 'GET' });
   },
   createInvite(profileId, payload) {
-    return this.request(`/api/profiles/${profileId}/members/invites`, { method: 'POST', body: payload });
+    return this.request(`/api/profiles/${profileId}/members/invites`, {
+      method: 'POST',
+      body: payload
+    });
   },
   revokeInvite(profileId, inviteId) {
-    return this.request(`/api/profiles/${profileId}/members/invites/${inviteId}`, { method: 'DELETE' });
+    return this.request(`/api/profiles/${profileId}/members/invites/${inviteId}`, {
+      method: 'DELETE'
+    });
   },
 
   // Pending Changes (Elder Approval)

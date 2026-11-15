@@ -25,7 +25,10 @@ const auth = {
 
   async handleRegisterElder(formData) {
     const btn = document.querySelector('#form-register button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+    }
     try {
       const res = await api.registerElder(formData);
       this.user = res.member;
@@ -35,7 +38,10 @@ const auth = {
     } catch (err) {
       ui.showAlert(err.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -45,7 +51,10 @@ const auth = {
       return;
     }
     const btn = document.querySelector('#form-join button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+    }
     try {
       const res = await api.join(formData);
       this.user = res.member;
@@ -55,7 +64,10 @@ const auth = {
     } catch (err) {
       ui.showAlert(err.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -65,7 +77,10 @@ const auth = {
       return;
     }
     const btn = document.querySelector('#form-login button[type="submit"]');
-    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
+    if (btn) {
+      btn.disabled = true;
+      btn.setAttribute('aria-busy', 'true');
+    }
     try {
       const res = await api.login(formData);
       this.user = res.member;
@@ -75,7 +90,10 @@ const auth = {
     } catch (err) {
       ui.showAlert(err.message, 'error');
     } finally {
-      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
+      if (btn) {
+        btn.disabled = false;
+        btn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -106,7 +124,13 @@ const auth = {
 
     const headerAvatar = document.getElementById('header-avatar');
     if (headerAvatar && this.profile.elderName) {
-      headerAvatar.textContent = this.profile.elderName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'CC';
+      headerAvatar.textContent =
+        this.profile.elderName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase() || 'CC';
     }
 
     const profileIdSpan = document.getElementById('header-profile-id');
@@ -116,11 +140,14 @@ const auth = {
     if (copyBtn && this.profile?.id) {
       copyBtn.onclick = () => {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(this.profile.id).then(() => {
-            ui.showAlert('CareCircle ID copied to clipboard!', 'success');
-          }).catch(() => {
-            ui.showAlert(`CareCircle ID: ${this.profile.id}`, 'info');
-          });
+          navigator.clipboard
+            .writeText(this.profile.id)
+            .then(() => {
+              ui.showAlert('CareCircle ID copied to clipboard!', 'success');
+            })
+            .catch(() => {
+              ui.showAlert(`CareCircle ID: ${this.profile.id}`, 'info');
+            });
         } else {
           ui.showAlert(`CareCircle ID: ${this.profile.id}`, 'info');
         }

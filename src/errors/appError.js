@@ -37,7 +37,10 @@ class AppError extends Error {
     return new AppError(message, 409, code);
   }
 
-  static locked(message = 'Account locked due to multiple failed attempts', code = 'ACCOUNT_LOCKED') {
+  static locked(
+    message = 'Account locked due to multiple failed attempts',
+    code = 'ACCOUNT_LOCKED'
+  ) {
     return new AppError(message, 423, code);
   }
 

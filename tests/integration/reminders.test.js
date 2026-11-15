@@ -116,7 +116,9 @@ describe('Proactive Reminder Engine & Task Endpoints', () => {
     // Escalation email dispatched to Nurse Bob
     const escalationMail = sent.find((m) => m.to === 'bob@carecircle.org');
     expect(escalationMail).toBeDefined();
-    expect(escalationMail.subject).toContain('Alert: Grandma Martha missed their 08:00 Atorvastatin');
+    expect(escalationMail.subject).toContain(
+      'Alert: Grandma Martha missed their 08:00 Atorvastatin'
+    );
   });
 
   it('handles midnight boundary across days correctly', async () => {
@@ -189,8 +191,12 @@ describe('Proactive Reminder Engine & Task Endpoints', () => {
     await notificationService.runReminders(ref24h);
 
     const sent24h = mockMailer.getSentEmails();
-    expect(sent24h.some((m) => m.subject.includes('Tomorrow') && m.to === 'martha@carecircle.org')).toBe(true);
-    expect(sent24h.some((m) => m.subject.includes('Tomorrow') && m.to === 'bob@carecircle.org')).toBe(true);
+    expect(
+      sent24h.some((m) => m.subject.includes('Tomorrow') && m.to === 'martha@carecircle.org')
+    ).toBe(true);
+    expect(
+      sent24h.some((m) => m.subject.includes('Tomorrow') && m.to === 'bob@carecircle.org')
+    ).toBe(true);
 
     mockMailer.clear();
 
@@ -199,7 +205,9 @@ describe('Proactive Reminder Engine & Task Endpoints', () => {
     await notificationService.runReminders(ref2h);
 
     const sent2h = mockMailer.getSentEmails();
-    expect(sent2h.some((m) => m.subject.includes('2 Hours') && m.to === 'martha@carecircle.org')).toBe(true);
+    expect(
+      sent2h.some((m) => m.subject.includes('2 Hours') && m.to === 'martha@carecircle.org')
+    ).toBe(true);
   });
 
   it('executes POST /tasks/run-reminders protected with X-Task-Token', async () => {

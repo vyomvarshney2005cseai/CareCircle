@@ -35,16 +35,12 @@
     {
       "collectionGroup": "notifications",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "sentAt", "order": "DESCENDING" }
-      ]
+      "fields": [{ "fieldPath": "sentAt", "order": "DESCENDING" }]
     },
     {
       "collectionGroup": "auditLogs",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "timestamp", "order": "DESCENDING" }
-      ]
+      "fields": [{ "fieldPath": "timestamp", "order": "DESCENDING" }]
     }
   ],
   "fieldOverrides": []

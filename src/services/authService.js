@@ -184,7 +184,11 @@ async function joinProfile({ profileId, inviteCode, name, email, passcode }) {
   });
 
   // Deactivate single-use invite
-  await repo.updateInvite(profileId, matchedInvite.id, { active: false, usedBy: newMember.id, usedAt: now.toISOString() });
+  await repo.updateInvite(profileId, matchedInvite.id, {
+    active: false,
+    usedBy: newMember.id,
+    usedAt: now.toISOString()
+  });
 
   await recordAudit(profileId, {
     actorMemberId: newMember.id,
@@ -237,7 +241,9 @@ async function login({ profileId, email, passcode }) {
   if (member.lockoutUntil && new Date(member.lockoutUntil) > now) {
     const minutesLeft = Math.ceil((new Date(member.lockoutUntil) - now) / 60000);
     logger.warn({ memberId: member.id, profileId }, 'Blocked login attempt on locked account');
-    throw AppError.locked(`Account is temporarily locked due to multiple failed login attempts. Try again in ${minutesLeft} minute(s).`);
+    throw AppError.locked(
+      `Account is temporarily locked due to multiple failed login attempts. Try again in ${minutesLeft} minute(s).`
+    );
   }
 
   const isMatch = await comparePasscode(passcode, member.passcodeHash);
@@ -248,7 +254,10 @@ async function login({ profileId, email, passcode }) {
 
     if (failedAttempts >= LOCKOUT_ATTEMPTS) {
       lockoutUntil = new Date(Date.now() + LOCKOUT_DURATION_MS).toISOString();
-      logger.warn({ memberId: member.id, profileId, failedAttempts }, 'Account locked after consecutive failed logins');
+      logger.warn(
+        { memberId: member.id, profileId, failedAttempts },
+        'Account locked after consecutive failed logins'
+      );
     }
 
     await repo.updateMember(profileId, member.id, {
@@ -257,7 +266,9 @@ async function login({ profileId, email, passcode }) {
     });
 
     if (lockoutUntil) {
-      throw AppError.locked('Too many failed attempts. Your account has been temporarily locked for 15 minutes.');
+      throw AppError.locked(
+        'Too many failed attempts. Your account has been temporarily locked for 15 minutes.'
+      );
     }
 
     throw AppError.unauthorized('Invalid profile ID, email, or passcode');

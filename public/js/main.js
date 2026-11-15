@@ -116,9 +116,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     targetTab.focus();
   }
 
-  if (loginBtn) loginBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(loginBtn); });
-  if (joinBtn) joinBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(joinBtn); });
-  if (regBtn) regBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(regBtn); });
+  if (loginBtn)
+    loginBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      activateAuthTab(loginBtn);
+    });
+  if (joinBtn)
+    joinBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      activateAuthTab(joinBtn);
+    });
+  if (regBtn)
+    regBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      activateAuthTab(regBtn);
+    });
 
   // Arrow navigation for auth tabs per WAI-ARIA tabs pattern
   const authTabsRow = document.querySelector('.auth-tabs-row');
@@ -233,7 +245,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   function refreshTimeChips() {
     if (!timesChips || !medTimesInput) return;
     timesChips.innerHTML = '';
-    const currentTimes = medTimesInput.value.split(',').map((t) => t.trim()).filter(Boolean);
+    const currentTimes = medTimesInput.value
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
     currentTimes.forEach((t) => {
       const chip = document.createElement('span');
       chip.className = 'time-chip';
@@ -257,7 +272,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         ui.showAlert('Please pick a time from the clock first.', 'info');
         return;
       }
-      const currentTimes = medTimesInput.value.split(',').map((t) => t.trim()).filter(Boolean);
+      const currentTimes = medTimesInput.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
       if (!currentTimes.includes(val)) {
         currentTimes.push(val);
         currentTimes.sort();
@@ -286,10 +304,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         ui.showAlert('Please select at least one day of the week.', 'error');
         return;
       }
-      const rawTimes = document.getElementById('med-times').value.split(',').map((t) => t.trim()).filter(Boolean);
+      const rawTimes = document
+        .getElementById('med-times')
+        .value.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
       if (rawTimes.length === 0) {
         if (medTimesError) {
-          medTimesError.textContent = 'Please enter at least one scheduled time (e.g. 08:00 or 14:00).';
+          medTimesError.textContent =
+            'Please enter at least one scheduled time (e.g. 08:00 or 14:00).';
           medTimesError.classList.remove('hidden');
         }
         ui.showAlert('Please enter at least one scheduled time (e.g. 08:00 or 14:00).', 'error');
@@ -303,7 +326,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const parts = t.split(':');
         let normalized = t;
         if (parts.length === 2) {
-          normalized = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+          normalized = `${parts[0].padStart(2, '0')}:${parts[1].padStart(2, '0')}`;
         }
         if (!timeRegex.test(normalized)) {
           if (medTimesError) {
@@ -482,7 +505,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     micBtn.addEventListener('click', () => {
       if (!speech.isRecognitionSupported()) {
-        ui.showAlert('Voice input is not supported in this browser. Please type your message.', 'info');
+        ui.showAlert(
+          'Voice input is not supported in this browser. Please type your message.',
+          'info'
+        );
         return;
       }
       app.handleMicInput();
@@ -502,15 +528,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (range === '7') {
         if (summaryLabel) summaryLabel.textContent = 'Adherence trending strong over 7 days';
-        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 70 Q 140 50 220 80 T 380 60 T 540 50 L 540 180 Z');
+        if (areaPath)
+          areaPath.setAttribute(
+            'd',
+            'M 60 180 L 60 70 Q 140 50 220 80 T 380 60 T 540 50 L 540 180 Z'
+          );
         if (linePath) linePath.setAttribute('d', 'M 60 70 Q 140 50 220 80 T 380 60 T 540 50');
       } else if (range === '30') {
         if (summaryLabel) summaryLabel.textContent = 'Adherence average 94% across 30 days';
-        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 85 Q 140 65 220 70 T 380 55 T 540 45 L 540 180 Z');
+        if (areaPath)
+          areaPath.setAttribute(
+            'd',
+            'M 60 180 L 60 85 Q 140 65 220 70 T 380 55 T 540 45 L 540 180 Z'
+          );
         if (linePath) linePath.setAttribute('d', 'M 60 85 Q 140 65 220 70 T 380 55 T 540 45');
       } else {
         if (summaryLabel) summaryLabel.textContent = 'Long-term consistency high across 90 days';
-        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 90 Q 140 80 220 60 T 380 50 T 540 40 L 540 180 Z');
+        if (areaPath)
+          areaPath.setAttribute(
+            'd',
+            'M 60 180 L 60 90 Q 140 80 220 60 T 380 50 T 540 40 L 540 180 Z'
+          );
         if (linePath) linePath.setAttribute('d', 'M 60 90 Q 140 80 220 60 T 380 50 T 540 40');
       }
     });

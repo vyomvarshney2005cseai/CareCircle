@@ -37,7 +37,12 @@ async function updateSettings(profileId, actorElder, updates) {
         ? { requireElderApprovalForEdits: updates.requireElderApprovalForEdits }
         : {}),
       ...(updates.escalationMinutes
-        ? { escalationMinutes: { ...existing.settings.escalationMinutes, ...updates.escalationMinutes } }
+        ? {
+            escalationMinutes: {
+              ...existing.settings.escalationMinutes,
+              ...updates.escalationMinutes
+            }
+          }
         : {})
     }
   });

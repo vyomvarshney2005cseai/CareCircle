@@ -27,10 +27,7 @@ router.post(
  * 2. Natural-Language Conversational Assistant
  * Accepts { message, confirmed, confirmationData }.
  */
-router.post(
-  '/assistant',
-  aiController.handleAssistant
-);
+router.post('/assistant', aiController.handleAssistant);
 
 /**
  * 3. Medication Interaction & Safety Check

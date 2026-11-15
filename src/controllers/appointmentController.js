@@ -32,7 +32,11 @@ async function getAppointment(req, res, next) {
 async function createAppointment(req, res, next) {
   try {
     const validated = appointmentSchema.parse(req.body);
-    const result = await appointmentService.createAppointment(req.params.profileId, req.user, validated);
+    const result = await appointmentService.createAppointment(
+      req.params.profileId,
+      req.user,
+      validated
+    );
 
     if (result.pending) {
       return res.status(202).json({ data: result });

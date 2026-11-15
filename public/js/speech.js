@@ -57,7 +57,9 @@ const speech = {
    */
   readSchedule(elderName, doses) {
     if (!doses || doses.length === 0) {
-      this.speak(`Hello ${elderName}. You have no medications scheduled for today. Have a wonderful day.`);
+      this.speak(
+        `Hello ${elderName}. You have no medications scheduled for today. Have a wonderful day.`
+      );
       return;
     }
 

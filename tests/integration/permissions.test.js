@@ -28,15 +28,13 @@ describe('Granular Permissions & requirePermission Middleware', () => {
     const inviteCode = inviteRes.body.data.inviteCode;
 
     // Join as family member
-    const joinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode,
-        name: 'Granddaughter Lily',
-        email: 'lily@carecircle.org',
-        passcode: 'lilyPass123'
-      });
+    const joinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode,
+      name: 'Granddaughter Lily',
+      email: 'lily@carecircle.org',
+      passcode: 'lilyPass123'
+    });
 
     familyCookie = joinRes.headers['set-cookie'];
   });

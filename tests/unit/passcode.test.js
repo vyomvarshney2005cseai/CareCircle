@@ -1,4 +1,8 @@
-const { generateRandomPasscode, hashPasscode, comparePasscode } = require('../../src/utils/passcode');
+const {
+  generateRandomPasscode,
+  hashPasscode,
+  comparePasscode
+} = require('../../src/utils/passcode');
 
 describe('Passcode Utility', () => {
   it('generates an 8-character random passcode', () => {

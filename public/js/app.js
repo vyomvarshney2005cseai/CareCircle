@@ -1,6 +1,32 @@
 /**
  * CareCircle Main Application Controller
  */
+const chipHtml = (variant, icon, label) =>
+  `<span class="chip ${variant}"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-${icon}"/></svg> ${label}</span>`;
+
+/** Status chip markup keyed by dose status (icon + text, never colour alone). */
+const STATUS_CHIPS = Object.freeze({
+  taken: chipHtml('chip-taken', 'check', 'TAKEN'),
+  missed: chipHtml('chip-missed', 'alert', 'MISSED'),
+  snoozed: chipHtml('chip-info', 'snooze', 'SNOOZED'),
+  pending: chipHtml('chip-pending', 'clock', 'DUE')
+});
+
+/** Role chip markup keyed by member role. */
+const ROLE_CHIPS = Object.freeze({
+  elder: chipHtml('chip-taken', 'user', 'ELDER'),
+  caretaker: chipHtml('chip-pending', 'user', 'CARETAKER'),
+  family: chipHtml('chip-info', 'user', 'FAMILY')
+});
+
+/** Chip class for each AI safety-check severity level. */
+const SEVERITY_CHIP_CLASS = Object.freeze({
+  high: 'chip-missed',
+  moderate: 'chip-pending',
+  low: 'chip-taken',
+  none: 'chip-taken'
+});
+
 window.app = {
   currentSchedule: null,
   currentMedications: [],
@@ -50,7 +76,7 @@ window.app = {
     if (!listEl) return;
 
     // 1. Update greeting and current formatted date
-    const elderName = auth.profile ? (auth.profile.elderName || 'Elder') : 'Friend';
+    const elderName = auth.profile ? auth.profile.elderName || 'Elder' : 'Friend';
     if (greetingNameEl) {
       if (auth.user && auth.user.role === 'elder') {
         greetingNameEl.textContent = elderName;
@@ -79,7 +105,7 @@ window.app = {
     }
     if (ringProgressEl) {
       const circumference = 238.76;
-      const fraction = totalCount > 0 ? (takenCount / totalCount) : 0;
+      const fraction = totalCount > 0 ? takenCount / totalCount : 0;
       const offset = circumference * (1 - fraction);
       ringProgressEl.setAttribute('stroke-dashoffset', offset.toFixed(1));
     }
@@ -99,12 +125,17 @@ window.app = {
     if (emptyEl) emptyEl.classList.add('hidden');
 
     // 4. Hero Next Dose Card
-    const nextDose = doses.find((d) => d.status === 'pending' || d.status === 'snoozed' || d.status === 'missed');
+    const nextDose = doses.find(
+      (d) => d.status === 'pending' || d.status === 'snoozed' || d.status === 'missed'
+    );
 
     if (nextDose && heroContainer) {
       const heroCard = document.createElement('article');
       heroCard.className = 'hero-card mb-lg';
-      heroCard.setAttribute('aria-label', `Next action: ${nextDose.medicationName} due at ${nextDose.scheduledTime}`);
+      heroCard.setAttribute(
+        'aria-label',
+        `Next action: ${nextDose.medicationName} due at ${nextDose.scheduledTime}`
+      );
 
       const safeMedName = ui.escapeHtml(nextDose.medicationName);
       const safeTime = ui.escapeHtml(nextDose.scheduledTime);
@@ -119,12 +150,16 @@ window.app = {
             <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-${isMissed ? 'alert' : 'clock'}"/></svg>
             <span>${isMissed ? 'MISSED DOSE' : 'NEXT DOSE DUE'} • ${safeTime}</span>
           </span>
-          ${nextDose.isLowStock ? `
+          ${
+            nextDose.isLowStock
+              ? `
             <span class="chip chip-missed">
               <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg>
               <span>Low Stock (${Number(nextDose.stockCount)} left)</span>
             </span>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
         <h3 class="hero-dose-name mb-xs">${safeMedName}</h3>
         <div class="hero-dose-meta mb-sm">${safeDosage} • ${safeForm}</div>
@@ -148,9 +183,21 @@ window.app = {
         </div>
       `;
 
-      heroCard.querySelector('.action-take').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'taken', nextDose.medicationName));
-      heroCard.querySelector('.action-snooze').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'snoozed', nextDose.medicationName));
-      heroCard.querySelector('.action-skip').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'skipped', nextDose.medicationName));
+      heroCard
+        .querySelector('.action-take')
+        .addEventListener('click', () =>
+          this.handleDoseAction(nextDose.id, 'taken', nextDose.medicationName)
+        );
+      heroCard
+        .querySelector('.action-snooze')
+        .addEventListener('click', () =>
+          this.handleDoseAction(nextDose.id, 'snoozed', nextDose.medicationName)
+        );
+      heroCard
+        .querySelector('.action-skip')
+        .addEventListener('click', () =>
+          this.handleDoseAction(nextDose.id, 'skipped', nextDose.medicationName)
+        );
 
       heroContainer.appendChild(heroCard);
     } else if (totalCount > 0 && heroContainer) {
@@ -210,23 +257,14 @@ window.app = {
 
         const isTaken = dose.status === 'taken';
 
-        let statusChip = '';
-        if (dose.status === 'taken') {
-          statusChip = '<span class="chip chip-taken"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-check"/></svg> TAKEN</span>';
-        } else if (dose.status === 'missed') {
-          statusChip = '<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> MISSED</span>';
-        } else if (dose.status === 'snoozed') {
-          statusChip = '<span class="chip chip-info"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-snooze"/></svg> SNOOZED</span>';
-        } else {
-          statusChip = '<span class="chip chip-pending"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg> DUE</span>';
-        }
+        const statusChip = STATUS_CHIPS[dose.status] || STATUS_CHIPS.pending;
 
         card.innerHTML = `
           <div class="dose-header">
             <div class="dose-time"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg> <span>${safeTime}</span></div>
             <div class="flex gap-xs flex-wrap">
               ${statusChip}
-              ${dose.isLowStock ? '<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> Low Stock (' + Number(dose.stockCount) + ' left)</span>' : ''}
+              ${dose.isLowStock ? `<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> Low Stock (${Number(dose.stockCount)} left)</span>` : ''}
             </div>
           </div>
           <div class="dose-med-name">${safeMedName}</div>
@@ -236,12 +274,14 @@ window.app = {
             <span>${safeInstructions}</span>
           </div>
 
-          <button type="button" class="btn btn-primary btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled aria-disabled="true"' : ''} aria-label="${isTaken ? 'Dose already recorded as taken' : 'Confirm taking ' + safeMedName}">
+          <button type="button" class="btn btn-primary btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled aria-disabled="true"' : ''} aria-label="${isTaken ? 'Dose already recorded as taken' : `Confirm taking ${safeMedName}`}">
             <svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg>
-            <span>${isTaken ? 'Taken at ' + new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'I took it'}</span>
+            <span>${isTaken ? `Taken at ${new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'I took it'}</span>
           </button>
 
-          ${!isTaken ? `
+          ${
+            !isTaken
+              ? `
             <div class="dose-actions-row">
               <button type="button" class="btn btn-secondary action-snooze" data-dose-id="${dose.id}" aria-label="Snooze reminder for 30 minutes">
                 <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-snooze"/></svg>
@@ -252,22 +292,30 @@ window.app = {
                 <span>Skip</span>
               </button>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         `;
 
         const takeBtn = card.querySelector('.btn-huge-take');
         if (takeBtn && !isTaken) {
-          takeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'taken', dose.medicationName));
+          takeBtn.addEventListener('click', () =>
+            this.handleDoseAction(dose.id, 'taken', dose.medicationName)
+          );
         }
 
         const skipBtn = card.querySelector('.action-skip');
         if (skipBtn) {
-          skipBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'skipped', dose.medicationName));
+          skipBtn.addEventListener('click', () =>
+            this.handleDoseAction(dose.id, 'skipped', dose.medicationName)
+          );
         }
 
         const snoozeBtn = card.querySelector('.action-snooze');
         if (snoozeBtn) {
-          snoozeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'snoozed', dose.medicationName));
+          snoozeBtn.addEventListener('click', () =>
+            this.handleDoseAction(dose.id, 'snoozed', dose.medicationName)
+          );
         }
 
         listEl.appendChild(card);
@@ -405,8 +453,12 @@ window.app = {
           </div>
         `;
 
-        item.querySelector('.action-approve').addEventListener('click', () => this.reviewChange(change.id, 'approve'));
-        item.querySelector('.action-reject').addEventListener('click', () => this.reviewChange(change.id, 'reject'));
+        item
+          .querySelector('.action-approve')
+          .addEventListener('click', () => this.reviewChange(change.id, 'approve'));
+        item
+          .querySelector('.action-reject')
+          .addEventListener('click', () => this.reviewChange(change.id, 'reject'));
         listEl.appendChild(item);
       });
     } catch (err) {
@@ -488,12 +540,16 @@ window.app = {
         <div class="stock-bar-wrap mb-sm">
           <div class="flex-between text-sm mb-xs">
             <span>Inventory Stock: <strong>${Number(m.stockCount)} units remaining</strong></span>
-            ${isLowStock ? `
+            ${
+              isLowStock
+                ? `
               <span class="chip chip-missed">
                 <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg>
                 <span>Refill Needed (Alert at &le; ${m.refillThreshold})</span>
               </span>
-            ` : `<span class="text-muted text-xs">Refill alert at &le; ${m.refillThreshold}</span>`}
+            `
+                : `<span class="text-muted text-xs">Refill alert at &le; ${m.refillThreshold}</span>`
+            }
           </div>
           <svg width="100%" height="8" aria-hidden="true">
             <rect width="100%" height="8" rx="4" fill="#F3F4F6"/>
@@ -507,7 +563,9 @@ window.app = {
         </div>
       `;
 
-      card.querySelector('.action-delete-med').addEventListener('click', () => this.deleteMed(m.id));
+      card
+        .querySelector('.action-delete-med')
+        .addEventListener('click', () => this.deleteMed(m.id));
       listEl.appendChild(card);
     });
   },
@@ -682,7 +740,7 @@ window.app = {
       const card = document.createElement('div');
       const apptTime = new Date(a.dateTime).getTime();
       const now = Date.now();
-      const isUrgent = apptTime > now && (apptTime - now < 24 * 3600 * 1000);
+      const isUrgent = apptTime > now && apptTime - now < 24 * 3600 * 1000;
       card.className = `card appointment-card mb-md ${isUrgent ? 'urgent-24h' : ''}`;
 
       const safeDoctor = ui.escapeHtml(a.doctorName);
@@ -710,12 +768,16 @@ window.app = {
                 <span>${safeLocation}</span>
               </a>
             </div>
-            ${safeNotes ? `
+            ${
+              safeNotes
+                ? `
               <div class="dose-instructions text-sm mt-xs">
                 <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-document"/></svg>
                 <span>${safeNotes}</span>
               </div>
-            ` : ''}
+            `
+                : ''
+            }
           </div>
           <div class="flex flex-col gap-xs">
             <button class="btn btn-secondary btn-sm action-ics-download" data-id="${a.id}" aria-label="Download calendar invite for Dr. ${safeDoctor}">
@@ -730,7 +792,9 @@ window.app = {
         </div>
       `;
 
-      card.querySelector('.action-delete-appt').addEventListener('click', () => this.deleteAppt(a.id));
+      card
+        .querySelector('.action-delete-appt')
+        .addEventListener('click', () => this.deleteAppt(a.id));
 
       const icsBtn = card.querySelector('.action-ics-download');
       if (icsBtn) {
@@ -744,7 +808,7 @@ window.app = {
   downloadIcs(appt) {
     const startDate = new Date(appt.dateTime);
     const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
-    const formatIcsDate = (d) => d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const formatIcsDate = (d) => `${d.toISOString().replace(/[-:]/g, '').slice(0, 15)}Z`;
 
     const icsContent = [
       'BEGIN:VCALENDAR',
@@ -873,13 +937,15 @@ window.app = {
       const isElder = auth.user.role === 'elder';
       const safeName = ui.escapeHtml(m.name);
       const safeEmail = ui.escapeHtml(m.email);
-      const initials = safeName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'M';
+      const initials =
+        safeName
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .slice(0, 2)
+          .toUpperCase() || 'M';
 
-      const roleChip = m.role === 'elder'
-        ? '<span class="chip chip-taken"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> ELDER</span>'
-        : (m.role === 'caretaker'
-          ? '<span class="chip chip-pending"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> CARETAKER</span>'
-          : '<span class="chip chip-info"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> FAMILY</span>');
+      const roleChip = ROLE_CHIPS[m.role] || ROLE_CHIPS.family;
 
       card.innerHTML = `
         <div class="flex-between flex-wrap gap-sm">
@@ -898,14 +964,18 @@ window.app = {
               </div>
             </div>
           </div>
-          ${isElder && !isSelf && m.active ? `
+          ${
+            isElder && !isSelf && m.active
+              ? `
             <div>
               <button class="btn btn-secondary btn-sm action-revoke-member" data-id="${m.id}" aria-label="Revoke circle access for ${safeName}">
                 <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
                 <span>Revoke Access</span>
               </button>
             </div>
-          ` : ''}
+          `
+              : ''
+          }
         </div>
       `;
 
@@ -1016,7 +1086,8 @@ window.app = {
       listEl.innerHTML = '';
 
       if (!history || history.length === 0) {
-        listEl.innerHTML = '<li class="audit-item text-muted">No reminders sent yet. Reminders are dispatched automatically based on schedules and alerts.</li>';
+        listEl.innerHTML =
+          '<li class="audit-item text-muted">No reminders sent yet. Reminders are dispatched automatically based on schedules and alerts.</li>';
         return;
       }
 
@@ -1072,8 +1143,11 @@ window.app = {
     try {
       const insight = await api.getAdherenceInsight();
       if (insight && insight.insight) {
-        textEl.textContent = insight.insight.startsWith('Add medicines') ? insight.insight : `"${insight.insight}"`;
-        if (tipEl) tipEl.textContent = insight.recommendation ? `Tip: ${insight.recommendation}` : '';
+        textEl.textContent = insight.insight.startsWith('Add medicines')
+          ? insight.insight
+          : `"${insight.insight}"`;
+        if (tipEl)
+          tipEl.textContent = insight.recommendation ? `Tip: ${insight.recommendation}` : '';
         box.classList.remove('hidden');
       }
     } catch (err) {
@@ -1121,7 +1195,8 @@ window.app = {
       const medicines = result.medicines || [];
 
       if (medicines.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-md text-muted">No medications could be recognized. Please check the image quality.</td></tr>';
+        tbody.innerHTML =
+          '<tr><td colspan="6" class="text-center py-md text-muted">No medications could be recognized. Please check the image quality.</td></tr>';
       } else {
         medicines.forEach((med, index) => {
           const row = document.createElement('tr');
@@ -1257,7 +1332,7 @@ window.app = {
 
       const sev = (data.severity || 'none').toLowerCase();
       if (badge) {
-        badge.className = `chip ${sev === 'high' ? 'chip-missed' : (sev === 'moderate' ? 'chip-pending' : 'chip-taken')}`;
+        badge.className = `chip ${SEVERITY_CHIP_CLASS[sev] || 'chip-taken'}`;
         badge.textContent = data.severity ? data.severity.toUpperCase() : 'NONE';
       }
 
@@ -1269,7 +1344,8 @@ window.app = {
         findingsList.innerHTML = '';
         const findings = data.findings || [];
         if (findings.length === 0) {
-          findingsList.innerHTML = '<p class="text-muted text-sm">No drug-drug interactions, duplicate therapies, or timing conflicts identified.</p>';
+          findingsList.innerHTML =
+            '<p class="text-muted text-sm">No drug-drug interactions, duplicate therapies, or timing conflicts identified.</p>';
         } else {
           findings.forEach((f) => {
             const item = document.createElement('div');
@@ -1278,7 +1354,8 @@ window.app = {
             const safeSeverity = ui.escapeHtml((f.severity || 'info').toUpperCase());
             const safeDesc = ui.escapeHtml(f.description);
             const safeRec = ui.escapeHtml(f.recommendation || 'Consult your doctor.');
-            const sevClass = (f.severity || 'low').toLowerCase() === 'high' ? 'chip-missed' : 'chip-pending';
+            const sevClass =
+              (f.severity || 'low').toLowerCase() === 'high' ? 'chip-missed' : 'chip-pending';
 
             item.innerHTML = `
               <div class="flex-between mb-xs">
@@ -1319,16 +1396,19 @@ window.app = {
 
   appendChatBubble(sender, text) {
     const messages = document.getElementById('ai-chat-messages');
-    if (!messages) return;
+    if (!messages) return null;
 
     const bubble = document.createElement('div');
     bubble.className = `ai-bubble ${sender}`;
     if (sender === 'user') {
       bubble.textContent = text;
     } else {
-      bubble.innerHTML = ui.escapeHtml(text)
-        .replace(/&lt;strong&gt;/g, '<strong>').replace(/&lt;\/strong&gt;/g, '</strong>')
-        .replace(/&lt;em&gt;/g, '<em>').replace(/&lt;\/em&gt;/g, '</em>')
+      bubble.innerHTML = ui
+        .escapeHtml(text)
+        .replace(/&lt;strong&gt;/g, '<strong>')
+        .replace(/&lt;\/strong&gt;/g, '</strong>')
+        .replace(/&lt;em&gt;/g, '<em>')
+        .replace(/&lt;\/em&gt;/g, '</em>')
         .replace(/\n/g, '<br>');
     }
     messages.appendChild(bubble);
@@ -1416,14 +1496,19 @@ window.app = {
       }
     } catch (err) {
       thinkingBubble.remove();
-      let friendlyError = "I'm having trouble processing that right now. Please try asking again or check your connection.";
+      let friendlyError =
+        "I'm having trouble processing that right now. Please try asking again or check your connection.";
       if (err.status === 401) {
         friendlyError = 'Please sign in to use the assistant.';
       } else if (err.status === 403) {
         friendlyError = "You don't have permission to perform that action.";
       } else if (err.status === 429) {
         friendlyError = 'The assistant is currently busy. Please wait a moment and try again.';
-      } else if (err.message && !err.message.startsWith('Request failed') && !err.message.includes('times.0')) {
+      } else if (
+        err.message &&
+        !err.message.startsWith('Request failed') &&
+        !err.message.includes('times.0')
+      ) {
         friendlyError = err.message;
       }
       this.appendChatBubble('assistant', friendlyError);

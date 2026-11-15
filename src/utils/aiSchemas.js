@@ -10,7 +10,9 @@ const draftMedicineSchema = z.object({
   dosage: z.string().trim().default('As directed'),
   form: z.string().trim().default('tablet'),
   frequency: z.string().trim().default('Once daily'),
-  suggestedTimes: z.array(z.string().regex(timeRegex, 'Time must be in HH:mm format')).default(['09:00']),
+  suggestedTimes: z
+    .array(z.string().regex(timeRegex, 'Time must be in HH:mm format'))
+    .default(['09:00']),
   instructions: z.string().trim().default('Take with water after meals')
 });
 
@@ -25,15 +27,17 @@ const prescriptionScanResultSchema = z.object({
 const assistantIntentSchema = z.object({
   action: z.enum(['mark_taken', 'query_today', 'add_appointment', 'query_adherence', 'unknown']),
   reply: z.string(),
-  params: z.object({
-    medicationName: z.string().optional(),
-    time: z.string().optional(),
-    doctorName: z.string().optional(),
-    specialty: z.string().optional(),
-    location: z.string().optional(),
-    dateTime: z.string().optional(),
-    notes: z.string().optional()
-  }).default({})
+  params: z
+    .object({
+      medicationName: z.string().optional(),
+      time: z.string().optional(),
+      doctorName: z.string().optional(),
+      specialty: z.string().optional(),
+      location: z.string().optional(),
+      dateTime: z.string().optional(),
+      notes: z.string().optional()
+    })
+    .default({})
 });
 
 /**
@@ -51,9 +55,11 @@ const safetyCheckResultSchema = z.object({
   severity: z.enum(['high', 'moderate', 'low', 'none']),
   summary: z.string(),
   findings: z.array(interactionFindingSchema).default([]),
-  disclaimer: z.string().default(
-    'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
-  )
+  disclaimer: z
+    .string()
+    .default(
+      'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
+    )
 });
 
 /**

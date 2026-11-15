@@ -42,7 +42,11 @@ async function registerElder(req, res, next) {
 async function createInvite(req, res, next) {
   try {
     const validated = createInviteSchema.parse(req.body);
-    const result = await authService.createInvite(req.params.profileId || req.user.profileId, req.user, validated);
+    const result = await authService.createInvite(
+      req.params.profileId || req.user.profileId,
+      req.user,
+      validated
+    );
     return res.status(201).json({ data: result });
   } catch (err) {
     return next(err);

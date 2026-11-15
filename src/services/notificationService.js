@@ -36,7 +36,10 @@ class NotificationService {
     const repo = getRepository();
     const existing = await repo.getNotification(profileId, idempotencyKey);
     if (existing) {
-      logger.debug({ profileId, idempotencyKey }, 'Notification skipped due to deterministic idempotency key');
+      logger.debug(
+        { profileId, idempotencyKey },
+        'Notification skipped due to deterministic idempotency key'
+      );
       return { sent: false, duplicate: true, key: idempotencyKey };
     }
 
@@ -69,7 +72,10 @@ class NotificationService {
         sentAt: new Date().toISOString()
       });
 
-      logger.info({ profileId, key: idempotencyKey, to: mailOptions.to }, 'Proactive notification delivered successfully');
+      logger.info(
+        { profileId, key: idempotencyKey, to: mailOptions.to },
+        'Proactive notification delivered successfully'
+      );
       return { sent: true, duplicate: false, key: idempotencyKey };
     } catch (err) {
       // If delivery failed after all retry attempts, release the key so subsequent runs can retry
@@ -99,7 +105,9 @@ class NotificationService {
       const elder = members.find((m) => m.role === ROLES.ELDER && m.active);
       if (!elder) continue;
 
-      const alertMembers = members.filter((m) => m.active && m.permissions && m.permissions.receiveAlerts);
+      const alertMembers = members.filter(
+        (m) => m.active && m.permissions && m.permissions.receiveAlerts
+      );
 
       // Escalation thresholds
       const missedAfterMin = profile.settings?.escalationMinutes?.missedAfter || 30;
@@ -143,7 +151,11 @@ class NotificationService {
           const times = Array.isArray(med.times) ? med.times : ['09:00'];
           for (const time of times) {
             // Construct scheduled datetime precisely in the profile timezone
-            const scheduledDateTime = DateTime.fromFormat(`${dateStr} ${time}`, 'yyyy-MM-dd HH:mm', { zone: tz });
+            const scheduledDateTime = DateTime.fromFormat(
+              `${dateStr} ${time}`,
+              'yyyy-MM-dd HH:mm',
+              { zone: tz }
+            );
             const scheduledIso = scheduledDateTime.toISO();
 
             // Time difference in minutes from scheduled time to localNow (positive = minutes past schedule)
@@ -163,7 +175,12 @@ class NotificationService {
 
             // --- A. UPCOMING DOSE REMINDER (15 minutes before schedule) ---
             if (diffMinutes >= -15 && diffMinutes < 0 && status === 'pending') {
-              const key = NotificationService.generateIdempotencyKey('DOSE_UPCOMING', med.id, scheduledIso, elder.id);
+              const key = NotificationService.generateIdempotencyKey(
+                'DOSE_UPCOMING',
+                med.id,
+                scheduledIso,
+                elder.id
+              );
               const tpl = templates.upcomingDoseTemplate({
                 elderName: elder.name,
                 medName: med.name,
@@ -172,24 +189,42 @@ class NotificationService {
                 instructions: med.instructions
               });
 
-              const res = await this.sendIdempotent(profile.id, key, { to: elder.email, ...tpl }, { type: 'DOSE_UPCOMING', entityId: med.id });
+              const res = await this.sendIdempotent(
+                profile.id,
+                key,
+                { to: elder.email, ...tpl },
+                { type: 'DOSE_UPCOMING', entityId: med.id }
+              );
               if (res.sent) sentCount += 1;
             }
 
             // --- B. MISSED DOSE REMINDER (30 min after schedule, mark missed) ---
-            if (diffMinutes >= missedAfterMin && diffMinutes < alertAfterMin && status === 'pending') {
+            if (
+              diffMinutes >= missedAfterMin &&
+              diffMinutes < alertAfterMin &&
+              status === 'pending'
+            ) {
               // Update status to 'missed' in repository and cache
-              const savedRecord = await repo.saveDoseLog(profile.id, existingLog?.id || syntheticId, {
-                medicationId: med.id,
-                scheduledFor: scheduledIso,
-                status: 'missed',
-                recordedBy: 'system-reminder'
-              });
+              const savedRecord = await repo.saveDoseLog(
+                profile.id,
+                existingLog?.id || syntheticId,
+                {
+                  medicationId: med.id,
+                  scheduledFor: scheduledIso,
+                  status: 'missed',
+                  recordedBy: 'system-reminder'
+                }
+              );
               doseLogMap.set(syntheticId, savedRecord);
               doseLogMap.set(deterministicLogKey, savedRecord);
               missedCount += 1;
 
-              const key = NotificationService.generateIdempotencyKey('DOSE_MISSED', med.id, scheduledIso, elder.id);
+              const key = NotificationService.generateIdempotencyKey(
+                'DOSE_MISSED',
+                med.id,
+                scheduledIso,
+                elder.id
+              );
               const tpl = templates.missedDoseTemplate({
                 elderName: elder.name,
                 medName: med.name,
@@ -197,7 +232,12 @@ class NotificationService {
                 scheduledTime: time
               });
 
-              const res = await this.sendIdempotent(profile.id, key, { to: elder.email, ...tpl }, { type: 'DOSE_MISSED', entityId: med.id });
+              const res = await this.sendIdempotent(
+                profile.id,
+                key,
+                { to: elder.email, ...tpl },
+                { type: 'DOSE_MISSED', entityId: med.id }
+              );
               if (res.sent) sentCount += 1;
             }
 
@@ -207,7 +247,12 @@ class NotificationService {
                 // If member is the elder, skip since they already received the missed dose email
                 if (member.id === elder.id) continue;
 
-                const key = NotificationService.generateIdempotencyKey('DOSE_ESCALATION', med.id, scheduledIso, member.id);
+                const key = NotificationService.generateIdempotencyKey(
+                  'DOSE_ESCALATION',
+                  med.id,
+                  scheduledIso,
+                  member.id
+                );
                 const tpl = templates.escalationAlertTemplate({
                   memberName: member.name,
                   elderName: elder.name,
@@ -216,7 +261,12 @@ class NotificationService {
                   scheduledTime: time
                 });
 
-                const res = await this.sendIdempotent(profile.id, key, { to: member.email, ...tpl }, { type: 'DOSE_ESCALATION', entityId: med.id });
+                const res = await this.sendIdempotent(
+                  profile.id,
+                  key,
+                  { to: member.email, ...tpl },
+                  { type: 'DOSE_ESCALATION', entityId: med.id }
+                );
                 if (res.sent) sentCount += 1;
               }
             }
@@ -232,7 +282,12 @@ class NotificationService {
               stockCount: med.stockCount,
               refillThreshold: med.refillThreshold
             });
-            const res = await this.sendIdempotent(profile.id, refillKey, { to: elder.email, ...tpl }, { type: 'REFILL_ALERT', entityId: med.id });
+            const res = await this.sendIdempotent(
+              profile.id,
+              refillKey,
+              { to: elder.email, ...tpl },
+              { type: 'REFILL_ALERT', entityId: med.id }
+            );
             if (res.sent) sentCount += 1;
           }
         }
@@ -251,7 +306,12 @@ class NotificationService {
         // 24-hour reminder window: between 23h and 25h ahead
         if (hoursUntil >= 23 && hoursUntil <= 25) {
           for (const member of recipients) {
-            const key = NotificationService.generateIdempotencyKey('APPT_24H', appt.id, appt.dateTime, member.id);
+            const key = NotificationService.generateIdempotencyKey(
+              'APPT_24H',
+              appt.id,
+              appt.dateTime,
+              member.id
+            );
             const tpl = templates.appointmentReminderTemplate({
               memberName: member.name,
               elderName: elder.name,
@@ -261,7 +321,12 @@ class NotificationService {
               formattedDateTime: apptTime.toFormat('ffff'),
               hoursBefore: 24
             });
-            const res = await this.sendIdempotent(profile.id, key, { to: member.email, ...tpl }, { type: 'APPT_24H', entityId: appt.id });
+            const res = await this.sendIdempotent(
+              profile.id,
+              key,
+              { to: member.email, ...tpl },
+              { type: 'APPT_24H', entityId: appt.id }
+            );
             if (res.sent) sentCount += 1;
           }
         }
@@ -269,7 +334,12 @@ class NotificationService {
         // 2-hour reminder window: between 110m and 130m ahead
         if (minutesUntil >= 110 && minutesUntil <= 130) {
           for (const member of recipients) {
-            const key = NotificationService.generateIdempotencyKey('APPT_2H', appt.id, appt.dateTime, member.id);
+            const key = NotificationService.generateIdempotencyKey(
+              'APPT_2H',
+              appt.id,
+              appt.dateTime,
+              member.id
+            );
             const tpl = templates.appointmentReminderTemplate({
               memberName: member.name,
               elderName: elder.name,
@@ -279,7 +349,12 @@ class NotificationService {
               formattedDateTime: apptTime.toFormat('ffff'),
               hoursBefore: 2
             });
-            const res = await this.sendIdempotent(profile.id, key, { to: member.email, ...tpl }, { type: 'APPT_2H', entityId: appt.id });
+            const res = await this.sendIdempotent(
+              profile.id,
+              key,
+              { to: member.email, ...tpl },
+              { type: 'APPT_2H', entityId: appt.id }
+            );
             if (res.sent) sentCount += 1;
           }
         }
@@ -315,7 +390,9 @@ class NotificationService {
       const elder = members.find((m) => m.role === ROLES.ELDER);
       if (!elder) continue;
 
-      const caretakersAndFamily = members.filter((m) => m.active && m.role !== ROLES.ELDER && m.permissions?.receiveAlerts);
+      const caretakersAndFamily = members.filter(
+        (m) => m.active && m.role !== ROLES.ELDER && m.permissions?.receiveAlerts
+      );
       if (caretakersAndFamily.length === 0) continue;
 
       // Calculate 7-day adherence stats
@@ -327,7 +404,8 @@ class NotificationService {
       const takenDoses = doseLogs.filter((l) => l.status === 'taken').length;
       const missedDoses = doseLogs.filter((l) => l.status === 'missed').length;
       const totalRecorded = takenDoses + missedDoses;
-      const adherenceRate = totalRecorded > 0 ? Math.round((takenDoses / totalRecorded) * 100) : 100;
+      const adherenceRate =
+        totalRecorded > 0 ? Math.round((takenDoses / totalRecorded) * 100) : 100;
 
       // Compute streak (consecutive days with 0 missed doses)
       let streak = 0;
@@ -347,7 +425,9 @@ class NotificationService {
       const upcomingAppts = allAppts.filter((a) => {
         if (a.status !== 'scheduled') return false;
         const apptDate = a.dateTime.slice(0, 10);
-        return apptDate >= weekEndStr && apptDate <= localNow.plus({ days: 7 }).toFormat('yyyy-MM-dd');
+        return (
+          apptDate >= weekEndStr && apptDate <= localNow.plus({ days: 7 }).toFormat('yyyy-MM-dd')
+        );
       });
 
       // AI Adherence Insight
@@ -356,7 +436,10 @@ class NotificationService {
         const insightResult = await aiService.getAdherenceInsight(profile.id);
         aiInsight = insightResult?.insight || null;
       } catch (err) {
-        logger.warn({ err: err.message, profileId: profile.id }, 'Could not generate AI insight for weekly digest');
+        logger.warn(
+          { err: err.message, profileId: profile.id },
+          'Could not generate AI insight for weekly digest'
+        );
       }
 
       for (const member of caretakersAndFamily) {
@@ -374,7 +457,12 @@ class NotificationService {
           aiInsight
         });
 
-        const res = await this.sendIdempotent(profile.id, digestKey, { to: member.email, ...tpl }, { type: 'WEEKLY_DIGEST' });
+        const res = await this.sendIdempotent(
+          profile.id,
+          digestKey,
+          { to: member.email, ...tpl },
+          { type: 'WEEKLY_DIGEST' }
+        );
         if (res.sent) sentCount += 1;
       }
     }

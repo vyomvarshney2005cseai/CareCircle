@@ -15,7 +15,9 @@ class AIController {
   async scanPrescription(req, res, next) {
     try {
       if (!req.file) {
-        throw AppError.badRequest('No prescription image uploaded. Please upload a JPEG, PNG, or WebP image.');
+        throw AppError.badRequest(
+          'No prescription image uploaded. Please upload a JPEG, PNG, or WebP image.'
+        );
       }
 
       const { buffer, mimetype } = req.file;
@@ -23,11 +25,18 @@ class AIController {
       // Validate magic byte signatures
       const isValidMagic = validateMagicBytes(buffer, mimetype);
       if (!isValidMagic) {
-        throw AppError.unprocessable('Invalid image content. File signature does not match declared MIME type.');
+        throw AppError.unprocessable(
+          'Invalid image content. File signature does not match declared MIME type.'
+        );
       }
 
       logger.info(
-        { profileId: req.user.profileId, memberId: req.user.memberId, bytes: buffer.length, mimetype },
+        {
+          profileId: req.user.profileId,
+          memberId: req.user.memberId,
+          bytes: buffer.length,
+          mimetype
+        },
         'Processing prescription scan request'
       );
 
@@ -75,7 +84,10 @@ class AIController {
   async checkInteractions(req, res, next) {
     try {
       const profileId = req.user.profileId;
-      logger.info({ profileId, memberId: req.user.memberId }, 'Performing medication interaction check');
+      logger.info(
+        { profileId, memberId: req.user.memberId },
+        'Performing medication interaction check'
+      );
 
       const safetyResult = await aiService.checkInteractions(profileId);
       return res.status(200).json(safetyResult);

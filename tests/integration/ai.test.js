@@ -9,7 +9,9 @@ describe('Google Gemini AI Integration Features', () => {
   let familyMember;
 
   // Minimal genuine 12-byte JPEG header: FF D8 FF E0 00 10 4A 46 49 46 00 01
-  const validJpegBuffer = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01]);
+  const validJpegBuffer = Buffer.from([
+    0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01
+  ]);
 
   beforeEach(async () => {
     await clearDatabase();
@@ -52,15 +54,13 @@ describe('Google Gemini AI Integration Features', () => {
         }
       });
 
-    const joinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode: inviteRes.body.data.inviteCode,
-        name: 'Granddaughter Lily',
-        email: 'lily@carecircle.org',
-        passcode: 'lilyPass123'
-      });
+    const joinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode: inviteRes.body.data.inviteCode,
+      name: 'Granddaughter Lily',
+      email: 'lily@carecircle.org',
+      passcode: 'lilyPass123'
+    });
 
     familyMember = {
       token: joinRes.body.data.token,

@@ -157,7 +157,7 @@ class ScheduleService {
       medicationId,
       scheduledFor: scheduledFor || new Date().toISOString(),
       status,
-      takenAt: status === 'taken' ? (takenAt || new Date().toISOString()) : null,
+      takenAt: status === 'taken' ? takenAt || new Date().toISOString() : null,
       recordedBy: actorUser.memberId
     });
 
@@ -242,7 +242,8 @@ class ScheduleService {
       }
 
       // Adherence percentage
-      const rate = expectedCount > 0 ? Math.min(100, Math.round((takenCount / expectedCount) * 100)) : 100;
+      const rate =
+        expectedCount > 0 ? Math.min(100, Math.round((takenCount / expectedCount) * 100)) : 100;
       return { expected: expectedCount, taken: takenCount, rate };
     }
 

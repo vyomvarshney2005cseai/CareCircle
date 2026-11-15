@@ -51,7 +51,11 @@ class MedicationService {
     };
 
     // Check if elder approval is required for non-elder modifications
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'medication',
         changeType: 'CREATE',
@@ -90,7 +94,11 @@ class MedicationService {
 
     const profile = await repo.getProfile(profileId);
 
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'medication',
         changeType: 'UPDATE',
@@ -129,7 +137,11 @@ class MedicationService {
 
     const profile = await repo.getProfile(profileId);
 
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'medication',
         changeType: 'DELETE',

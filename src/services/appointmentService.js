@@ -49,7 +49,11 @@ class AppointmentService {
       createdBy: actorUser.memberId
     };
 
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'appointment',
         changeType: 'CREATE',
@@ -88,7 +92,11 @@ class AppointmentService {
 
     const profile = await repo.getProfile(profileId);
 
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'appointment',
         changeType: 'UPDATE',
@@ -127,7 +135,11 @@ class AppointmentService {
 
     const profile = await repo.getProfile(profileId);
 
-    if (profile.settings && profile.settings.requireElderApprovalForEdits && actorUser.role !== ROLES.ELDER) {
+    if (
+      profile.settings &&
+      profile.settings.requireElderApprovalForEdits &&
+      actorUser.role !== ROLES.ELDER
+    ) {
       return pendingChangeService.proposeChange(profileId, actorUser, {
         entity: 'appointment',
         changeType: 'DELETE',

@@ -6,11 +6,7 @@ module.exports = {
   clearMocks: true,
   resetMocks: true,
   coverageDirectory: 'coverage',
-  collectCoverageFrom: [
-    'src/**/*.js',
-    '!src/server.js',
-    '!src/repositories/firestore/**'
-  ],
+  collectCoverageFrom: ['src/**/*.js', '!src/server.js', '!src/repositories/firestore/**'],
   coveragePathIgnorePatterns: [
     '/node_modules/',
     '/src/server.js',

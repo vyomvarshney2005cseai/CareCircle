@@ -14,7 +14,10 @@ class MockMailer extends MailerInterface {
   async sendMail({ to, subject, html, text, from = 'CareCircle <no-reply@carecircle.org>' }) {
     if (this.shouldFailTimes > 0) {
       this.shouldFailTimes -= 1;
-      logger.warn({ to, subject }, '[MockMailer] Simulated email transmission failure for retry testing');
+      logger.warn(
+        { to, subject },
+        '[MockMailer] Simulated email transmission failure for retry testing'
+      );
       throw new Error('Simulated SMTP connection failure');
     }
 

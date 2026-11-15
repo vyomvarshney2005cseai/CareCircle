@@ -177,7 +177,9 @@ const ui = {
     modal.removeAttribute('hidden');
 
     // Focus the first actionable or input element inside the modal
-    const focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    const focusable = modal.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
     if (focusable.length > 0) {
       setTimeout(() => focusable[0].focus(), 50);
     }

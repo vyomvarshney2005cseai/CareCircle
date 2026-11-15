@@ -16,14 +16,12 @@ describe('Full End-to-End CareCircle Scenario', () => {
 
   it('executes the full collaborative elderly care workflow seamlessly', async () => {
     // 1. Elder registers
-    const regRes = await request(app)
-      .post('/api/auth/register-elder')
-      .send({
-        elderName: 'Grandma Martha',
-        elderEmail: 'martha@carecircle.org',
-        passcode: 'martha123',
-        timezone: 'Asia/Kolkata'
-      });
+    const regRes = await request(app).post('/api/auth/register-elder').send({
+      elderName: 'Grandma Martha',
+      elderEmail: 'martha@carecircle.org',
+      passcode: 'martha123',
+      timezone: 'Asia/Kolkata'
+    });
 
     expect(regRes.status).toBe(201);
     const profileId = regRes.body.data.profile.id;
@@ -83,15 +81,13 @@ describe('Full End-to-End CareCircle Scenario', () => {
     expect(inviteCode.length).toBe(8);
 
     // 5. Caretaker joins CareCircle
-    const joinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode,
-        name: 'Nurse Bob',
-        email: 'bob@carecircle.org',
-        passcode: 'nurseBob123'
-      });
+    const joinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode,
+      name: 'Nurse Bob',
+      email: 'bob@carecircle.org',
+      passcode: 'nurseBob123'
+    });
 
     expect(joinRes.status).toBe(201);
     const caretakerCookie = joinRes.headers['set-cookie'];
@@ -206,21 +202,33 @@ describe('Full End-to-End CareCircle Scenario', () => {
     const tUpcoming = DateTime.fromISO('2026-11-15T08:48:00', { zone: 'Asia/Kolkata' });
     await notificationService.runReminders(tUpcoming);
     const upcomingMails = mockMailer.getSentEmails();
-    expect(upcomingMails.some((m) => m.to === 'martha@carecircle.org' && m.subject.includes('Upcoming Medicine'))).toBe(true);
+    expect(
+      upcomingMails.some(
+        (m) => m.to === 'martha@carecircle.org' && m.subject.includes('Upcoming Medicine')
+      )
+    ).toBe(true);
 
     // B. 35 minutes after 09:00 (09:35 AM): Dose becomes missed and email sent
     mockMailer.clear();
     const tMissed = DateTime.fromISO('2026-11-15T09:35:00', { zone: 'Asia/Kolkata' });
     await notificationService.runReminders(tMissed);
     const missedMails = mockMailer.getSentEmails();
-    expect(missedMails.some((m) => m.to === 'martha@carecircle.org' && m.subject.includes('Missed Medicine'))).toBe(true);
+    expect(
+      missedMails.some(
+        (m) => m.to === 'martha@carecircle.org' && m.subject.includes('Missed Medicine')
+      )
+    ).toBe(true);
 
     // C. 70 minutes after 09:00 (10:10 AM): Escalation alert to caretaker Nurse Bob
     mockMailer.clear();
     const tEscalate = DateTime.fromISO('2026-11-15T10:10:00', { zone: 'Asia/Kolkata' });
     await notificationService.runReminders(tEscalate);
     const escalateMails = mockMailer.getSentEmails();
-    expect(escalateMails.some((m) => m.to === 'bob@carecircle.org' && m.subject.includes('Alert: Grandma Martha missed'))).toBe(true);
+    expect(
+      escalateMails.some(
+        (m) => m.to === 'bob@carecircle.org' && m.subject.includes('Alert: Grandma Martha missed')
+      )
+    ).toBe(true);
 
     // D. Idempotency test: running again at 10:10 AM sends 0 new duplicate emails!
     mockMailer.clear();
@@ -232,8 +240,12 @@ describe('Full End-to-End CareCircle Scenario', () => {
     mockMailer.clear();
     await notificationService.runReminders(tAppt24h);
     const apptMails = mockMailer.getSentEmails();
-    expect(apptMails.some((m) => m.to === 'martha@carecircle.org' && m.subject.includes('Tomorrow'))).toBe(true);
-    expect(apptMails.some((m) => m.to === 'bob@carecircle.org' && m.subject.includes('Tomorrow'))).toBe(true);
+    expect(
+      apptMails.some((m) => m.to === 'martha@carecircle.org' && m.subject.includes('Tomorrow'))
+    ).toBe(true);
+    expect(
+      apptMails.some((m) => m.to === 'bob@carecircle.org' && m.subject.includes('Tomorrow'))
+    ).toBe(true);
 
     // Re-run appointment reminder: 0 duplicates!
     mockMailer.clear();
@@ -259,15 +271,13 @@ describe('Full End-to-End CareCircle Scenario', () => {
     expect(familyInviteRes.status).toBe(201);
     const familyInviteCode = familyInviteRes.body.data.inviteCode;
 
-    const familyJoinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode: familyInviteCode,
-        name: 'Grandson Tim',
-        email: 'tim@carecircle.org',
-        passcode: 'timmyPass123'
-      });
+    const familyJoinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode: familyInviteCode,
+      name: 'Grandson Tim',
+      email: 'tim@carecircle.org',
+      passcode: 'timmyPass123'
+    });
 
     expect(familyJoinRes.status).toBe(201);
     const familyCookie = familyJoinRes.headers['set-cookie'];

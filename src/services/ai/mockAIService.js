@@ -50,7 +50,12 @@ class MockAIService extends AIServiceInterface {
           time: '08:00'
         }
       };
-    } else if (text.includes('due') || text.includes('today') || text.includes('schedule') || text.includes('what')) {
+    } else if (
+      text.includes('due') ||
+      text.includes('today') ||
+      text.includes('schedule') ||
+      text.includes('what')
+    ) {
       raw = {
         action: 'query_today',
         reply: 'Here are your scheduled medications for today.',
@@ -68,7 +73,12 @@ class MockAIService extends AIServiceInterface {
           notes: 'Follow-up consultation'
         }
       };
-    } else if (text.includes('week') || text.includes('adherence') || text.includes('progress') || text.includes('how was')) {
+    } else if (
+      text.includes('week') ||
+      text.includes('adherence') ||
+      text.includes('progress') ||
+      text.includes('how was')
+    ) {
       raw = {
         action: 'query_adherence',
         reply: 'Here is your adherence summary for the past week.',
@@ -77,7 +87,8 @@ class MockAIService extends AIServiceInterface {
     } else {
       raw = {
         action: 'unknown',
-        reply: "I am your CareCircle assistant. You can ask me what is due today, to mark a dose as taken, or to book a doctor appointment.",
+        reply:
+          'I am your CareCircle assistant. You can ask me what is due today, to mark a dose as taken, or to book a doctor appointment.',
         params: {}
       };
     }
@@ -89,30 +100,38 @@ class MockAIService extends AIServiceInterface {
     const names = (medications || []).map((m) => (m.name || '').toLowerCase());
     const hasAspirin = names.some((n) => n.includes('aspirin'));
     const hasIbuprofen = names.some((n) => n.includes('ibuprofen') || n.includes('advil'));
-    const hasBloodThinner = names.some((n) => n.includes('warfarin') || n.includes('eliquis') || n.includes('clopidogrel'));
+    const hasBloodThinner = names.some(
+      (n) => n.includes('warfarin') || n.includes('eliquis') || n.includes('clopidogrel')
+    );
 
     let raw;
     if ((hasAspirin && hasIbuprofen) || (hasBloodThinner && hasIbuprofen)) {
       raw = {
         severity: 'moderate',
-        summary: 'Potential drug-drug interaction identified between blood thinner/antiplatelet and NSAID.',
+        summary:
+          'Potential drug-drug interaction identified between blood thinner/antiplatelet and NSAID.',
         findings: [
           {
             medications: ['Aspirin', 'Ibuprofen'],
             type: 'interaction',
             severity: 'moderate',
-            description: 'Concurrent use of Aspirin with Ibuprofen increases gastrointestinal bleeding risks and may reduce Aspirins cardioprotective efficacy.',
-            recommendation: 'Consult your doctor before taking Ibuprofen alongside Aspirin. Acetaminophen (Paracetamol) may be preferred for pain.'
+            description:
+              'Concurrent use of Aspirin with Ibuprofen increases gastrointestinal bleeding risks and may reduce Aspirins cardioprotective efficacy.',
+            recommendation:
+              'Consult your doctor before taking Ibuprofen alongside Aspirin. Acetaminophen (Paracetamol) may be preferred for pain.'
           }
         ],
-        disclaimer: 'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
+        disclaimer:
+          'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
       };
     } else {
       raw = {
         severity: 'none',
-        summary: 'No significant drug-drug interactions or duplicate therapies detected among the active medications.',
+        summary:
+          'No significant drug-drug interactions or duplicate therapies detected among the active medications.',
         findings: [],
-        disclaimer: 'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
+        disclaimer:
+          'This safety check is AI-generated for informational awareness and is not a substitute for professional medical advice. Always consult your doctor or certified pharmacist before modifying your medication regimen.'
       };
     }
 
@@ -121,7 +140,8 @@ class MockAIService extends AIServiceInterface {
 
   async generateAdherenceInsight(_doseLogs, _medications) {
     const raw = {
-      insight: 'Morning medication routine is strong when taken with breakfast. Evening doses on weekends show a slight delay — consider setting a gentle 7:30 PM reminder before dinner.',
+      insight:
+        'Morning medication routine is strong when taken with breakfast. Evening doses on weekends show a slight delay — consider setting a gentle 7:30 PM reminder before dinner.',
       positiveNote: 'Your morning adherence streak is consistent!',
       recommendation: 'Anchor evening medications to an existing evening habit like dinner or tea.'
     };

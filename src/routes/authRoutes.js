@@ -14,6 +14,11 @@ router.post('/logout', authController.logout);
 
 // Protected auth routes
 router.get('/me', authenticate, authController.getMe);
-router.post('/profiles/:profileId/invites', authenticate, requireElder(), authController.createInvite);
+router.post(
+  '/profiles/:profileId/invites',
+  authenticate,
+  requireElder(),
+  authController.createInvite
+);
 
 module.exports = router;

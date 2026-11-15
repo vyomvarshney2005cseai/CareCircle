@@ -21,17 +21,13 @@ describe('Task Authentication Middleware (X-Task-Token)', () => {
   });
 
   it('rejects request with 403 when X-Task-Token is incorrect', async () => {
-    const res = await request(testApp)
-      .post('/test-task')
-      .set('X-Task-Token', 'wrong-token-value');
+    const res = await request(testApp).post('/test-task').set('X-Task-Token', 'wrong-token-value');
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('FORBIDDEN');
   });
 
   it('allows request through when valid token is provided', async () => {
-    const res = await request(testApp)
-      .post('/test-task')
-      .set('X-Task-Token', config.taskToken);
+    const res = await request(testApp).post('/test-task').set('X-Task-Token', config.taskToken);
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });

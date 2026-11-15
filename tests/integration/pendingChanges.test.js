@@ -17,21 +17,24 @@ describe('Elder-Centred Approval Workflow (Pending Changes)', () => {
       .set('Authorization', `Bearer ${elder.token}`)
       .send({
         role: 'caretaker',
-        permissions: { canViewMeds: true, canEditMeds: true, canViewAppointments: true, canEditAppointments: true }
+        permissions: {
+          canViewMeds: true,
+          canEditMeds: true,
+          canViewAppointments: true,
+          canEditAppointments: true
+        }
       });
 
     const inviteCode = inviteRes.body.data.inviteCode;
 
     // 2. Caretaker joins
-    const joinRes = await request(app)
-      .post('/api/auth/join')
-      .send({
-        profileId,
-        inviteCode,
-        name: 'Nurse Joy',
-        email: 'joy@carecircle.org',
-        passcode: 'joyPass123'
-      });
+    const joinRes = await request(app).post('/api/auth/join').send({
+      profileId,
+      inviteCode,
+      name: 'Nurse Joy',
+      email: 'joy@carecircle.org',
+      passcode: 'joyPass123'
+    });
 
     caretakerToken = joinRes.body.data.token;
   });

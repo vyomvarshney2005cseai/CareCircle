@@ -8,6 +8,17 @@ const AppError = require('../errors/appError');
 const { ROLES } = require('../constants/roles');
 
 /**
+ * Extract the YYYY-MM-DD day a dose log belongs to.
+ * @param {object} log Dose log entry.
+ * @returns {string|null} ISO date string, or null when unknown.
+ */
+function getLogDate(log) {
+  if (log.date) return log.date;
+  const timestamp = log.scheduledTime || log.takenAt;
+  return timestamp ? timestamp.slice(0, 10) : null;
+}
+
+/**
  * High-level AI Service coordinating multimodal Gemini vision,
  * conversational intent routing, interaction safety, and adherence insights.
  * All mutations are strictly gated by caller permissions and explicit confirmation.
@@ -80,16 +91,13 @@ class AIService {
     const medications = await repo.listMedications(profileId, true);
     const doseLogs = await repo.listDoseLogs(profileId, {});
 
-    const distinctDays = new Set(
-      (doseLogs || [])
-        .map((log) => log.date || (log.scheduledTime ? log.scheduledTime.slice(0, 10) : (log.takenAt ? log.takenAt.slice(0, 10) : null)))
-        .filter(Boolean)
-    );
+    const distinctDays = new Set((doseLogs || []).map(getLogDate).filter(Boolean));
 
     if (!medications || medications.length === 0 || distinctDays.size < 3) {
       return {
         insight: 'Add medicines and track for a few days to see insights.',
-        positiveNote: 'Your personalized routine insights and schedule patterns will appear here once you have recorded a few days of doses.',
+        positiveNote:
+          'Your personalized routine insights and schedule patterns will appear here once you have recorded a few days of doses.',
         recommendation: 'Keep logging your doses daily to unlock routine trends.'
       };
     }
@@ -141,7 +149,11 @@ class AIService {
     switch (intent.action) {
       case 'mark_taken': {
         // Check permission
-        if (actorUser.role !== ROLES.ELDER && !actorUser.permissions?.canEditMeds && !actorUser.permissions?.canViewMeds) {
+        if (
+          actorUser.role !== ROLES.ELDER &&
+          !actorUser.permissions?.canEditMeds &&
+          !actorUser.permissions?.canViewMeds
+        ) {
           return {
             action: 'permission_denied',
             reply: 'You do not have permission to log medication doses for this circle.',
@@ -155,15 +167,21 @@ class AIService {
 
         let matchedDose = null;
         if (requestedMedName) {
-          matchedDose = pendingDoses.find((d) => d.medicationName.toLowerCase().includes(requestedMedName));
+          matchedDose = pendingDoses.find((d) =>
+            d.medicationName.toLowerCase().includes(requestedMedName)
+          );
         }
         if (!matchedDose && pendingDoses.length > 0) {
           matchedDose = pendingDoses[0];
         }
 
-        const medName = matchedDose ? matchedDose.medicationName : (intent.params?.medicationName || 'Medication');
+        const medName = matchedDose
+          ? matchedDose.medicationName
+          : intent.params?.medicationName || 'Medication';
         const doseId = matchedDose ? matchedDose.id : null;
-        const time = matchedDose ? matchedDose.scheduledTime : (intent.params?.time || 'Scheduled dose');
+        const time = matchedDose
+          ? matchedDose.scheduledTime
+          : intent.params?.time || 'Scheduled dose';
 
         return {
           action: 'mark_taken',
@@ -191,7 +209,8 @@ class AIService {
         const doctorName = intent.params?.doctorName || 'Doctor';
         const specialty = intent.params?.specialty || 'General Consultation';
         const location = intent.params?.location || 'Clinic';
-        const dateTime = intent.params?.dateTime || new Date(Date.now() + 86400000 * 2).toISOString();
+        const dateTime =
+          intent.params?.dateTime || new Date(Date.now() + 86400000 * 2).toISOString();
         const notes = intent.params?.notes || 'Scheduled via CareCircle AI Assistant';
 
         return {
@@ -268,7 +287,9 @@ class AIService {
       default:
         return {
           action: 'unknown',
-          reply: intent.reply || "I'm your CareCircle assistant. You can ask what's due today, to mark a dose as taken, or to schedule a doctor appointment.",
+          reply:
+            intent.reply ||
+            "I'm your CareCircle assistant. You can ask what's due today, to mark a dose as taken, or to schedule a doctor appointment.",
           requiresConfirmation: false
         };
     }
@@ -282,7 +303,11 @@ class AIService {
     const { action } = confirmationData;
 
     if (action === 'mark_taken') {
-      if (actorUser.role !== ROLES.ELDER && !actorUser.permissions?.canEditMeds && !actorUser.permissions?.canViewMeds) {
+      if (
+        actorUser.role !== ROLES.ELDER &&
+        !actorUser.permissions?.canEditMeds &&
+        !actorUser.permissions?.canViewMeds
+      ) {
         throw AppError.forbidden('Missing permission to record medication dose');
       }
 
@@ -291,8 +316,8 @@ class AIService {
         // Resolve today's dose
         const todaySchedule = await scheduleService.getScheduleForDate(profileId);
         const requestedMedName = (confirmationData.medicationName || '').toLowerCase();
-        const pendingDose = (todaySchedule.doses || []).find((d) =>
-          d.status !== 'taken' && d.medicationName.toLowerCase().includes(requestedMedName)
+        const pendingDose = (todaySchedule.doses || []).find(
+          (d) => d.status !== 'taken' && d.medicationName.toLowerCase().includes(requestedMedName)
         );
         if (pendingDose) {
           doseId = pendingDose.id;

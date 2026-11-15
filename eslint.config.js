@@ -1,13 +1,11 @@
+const js = require('@eslint/js');
+const globals = require('globals');
 const prettier = require('eslint-config-prettier');
 
 module.exports = [
+  js.configs.recommended,
   {
-    ignores: [
-      'node_modules/**',
-      'coverage/**',
-      'dist/**',
-      '.git/**'
-    ]
+    ignores: ['node_modules/**', 'coverage/**', 'dist/**', '.git/**']
   },
   {
     files: ['src/**/*.js', 'tests/**/*.js', 'public/**/*.js'],
@@ -69,7 +67,27 @@ module.exports = [
       ],
       'no-console': 'off',
       'no-undef': 'error',
-      'no-empty': ['error', { allowEmptyCatch: true }]
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      eqeqeq: ['error', 'always'],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      curly: ['error', 'multi-line'],
+      'object-shorthand': ['error', 'always'],
+      'prefer-template': 'error',
+      'no-else-return': ['error', { allowElseIf: false }],
+      'no-useless-return': 'error',
+      'no-useless-concat': 'error',
+      'no-lonely-if': 'error',
+      'no-param-reassign': ['error', { props: false }],
+      'no-shadow': 'error',
+      'no-return-await': 'error',
+      'no-unneeded-ternary': 'error',
+      'consistent-return': 'error',
+      'default-param-last': 'error',
+      'no-nested-ternary': 'error',
+      'max-depth': ['warn', 4],
+      'max-params': ['error', 5],
+      complexity: ['warn', 15]
     }
   },
   {

@@ -33,7 +33,11 @@ async function getMedication(req, res, next) {
 async function createMedication(req, res, next) {
   try {
     const validated = medicationSchema.parse(req.body);
-    const result = await medicationService.createMedication(req.params.profileId, req.user, validated);
+    const result = await medicationService.createMedication(
+      req.params.profileId,
+      req.user,
+      validated
+    );
 
     if (result.pending) {
       return res.status(202).json({ data: result });
