@@ -7,6 +7,7 @@ window.app = {
   currentAppointments: [],
   currentMembers: [],
   currentPendingChanges: [],
+  inFlightDoses: new Set(),
 
   async loadAllData() {
     if (!auth.profile) return;
@@ -275,6 +276,16 @@ window.app = {
   },
 
   async handleDoseAction(doseId, status, medName = 'Medication') {
+    if (this.inFlightDoses.has(doseId)) return;
+    this.inFlightDoses.add(doseId);
+
+    // Provide immediate visual feedback by disabling buttons for this dose
+    const doseButtons = document.querySelectorAll(`[data-dose-id="${doseId}"]`);
+    doseButtons.forEach((b) => {
+      b.disabled = true;
+      b.setAttribute('aria-busy', 'true');
+    });
+
     try {
       await api.recordDoseAction(auth.profile.id, doseId, status);
       const actionLabels = {
@@ -295,6 +306,13 @@ window.app = {
       ]);
     } catch (err) {
       ui.showAlert(err.message, 'error');
+      // Re-enable buttons if call failed
+      doseButtons.forEach((b) => {
+        b.disabled = false;
+        b.removeAttribute('aria-busy');
+      });
+    } finally {
+      this.inFlightDoses.delete(doseId);
     }
   },
 
@@ -478,6 +496,11 @@ window.app = {
   async handleAddMedication(formData) {
     const errEl = document.getElementById('modal-add-med-error');
     if (errEl) errEl.classList.add('hidden');
+    const submitBtn = document.querySelector('#form-add-med button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+    }
     try {
       const res = await api.createMedication(auth.profile.id, formData);
       if (res.pending) {
@@ -495,6 +518,11 @@ window.app = {
         errEl.classList.remove('hidden');
       }
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -679,6 +707,11 @@ window.app = {
   async handleAddAppointment(formData) {
     const errEl = document.getElementById('modal-add-appt-error');
     if (errEl) errEl.classList.add('hidden');
+    const submitBtn = document.querySelector('#form-add-appt button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+    }
     try {
       const res = await api.createAppointment(auth.profile.id, formData);
       if (res.pending) {
@@ -696,6 +729,11 @@ window.app = {
         errEl.classList.remove('hidden');
       }
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -820,6 +858,11 @@ window.app = {
   },
 
   async handleCreateInvite(formData) {
+    const submitBtn = document.querySelector('#form-create-invite button[type="submit"]');
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+    }
     try {
       const invite = await api.createInvite(auth.profile.id, formData);
       ui.closeModal('modal-create-invite');
@@ -831,6 +874,11 @@ window.app = {
       ui.showAlert('Invite passcode generated successfully!', 'success');
     } catch (err) {
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+      }
     }
   },
 
@@ -1034,47 +1082,60 @@ window.app = {
       return;
     }
 
-    let addedCount = 0;
-    for (const row of rows) {
-      const nameInput = row.querySelector('.scan-med-name');
-      const dosageInput = row.querySelector('.scan-med-dosage');
-      const formInput = row.querySelector('.scan-med-form');
-      const timesInput = row.querySelector('.scan-med-times');
-      const instInput = row.querySelector('.scan-med-instructions');
-
-      if (!nameInput || !nameInput.value.trim()) continue;
-
-      const timesArr = (timesInput ? timesInput.value : '08:00')
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
-
-      const payload = {
-        name: nameInput.value.trim(),
-        dosage: dosageInput ? dosageInput.value.trim() : '1 dose',
-        form: formInput ? formInput.value : 'tablet',
-        times: timesArr.length > 0 ? timesArr : ['08:00'],
-        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
-        startDate: new Date().toISOString().slice(0, 10),
-        instructions: instInput ? instInput.value.trim() : 'Take as directed',
-        stockCount: 30,
-        refillThreshold: 5
-      };
-
-      try {
-        await api.createMedication(auth.profile.id, payload);
-        addedCount += 1;
-      } catch (err) {
-        console.error('Failed to create scanned med', err);
-      }
+    const saveBtn = document.getElementById('btn-save-scanned-meds');
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.setAttribute('aria-busy', 'true');
     }
 
-    ui.closeModal('modal-scan-prescription');
-    ui.showAlert(`Successfully added ${addedCount} medication(s) to CareCircle!`, 'success');
-    await Promise.all([
-      this.loadMedications(auth.profile.id),
-      this.loadTodaySchedule(auth.profile.id)
-    ]);
+    try {
+      let addedCount = 0;
+      for (const row of rows) {
+        const nameInput = row.querySelector('.scan-med-name');
+        const dosageInput = row.querySelector('.scan-med-dosage');
+        const formInput = row.querySelector('.scan-med-form');
+        const timesInput = row.querySelector('.scan-med-times');
+        const instInput = row.querySelector('.scan-med-instructions');
+
+        if (!nameInput || !nameInput.value.trim()) continue;
+
+        const timesArr = (timesInput ? timesInput.value : '08:00')
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean);
+
+        const payload = {
+          name: nameInput.value.trim(),
+          dosage: dosageInput ? dosageInput.value.trim() : '1 dose',
+          form: formInput ? formInput.value : 'tablet',
+          times: timesArr.length > 0 ? timesArr : ['08:00'],
+          daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+          startDate: new Date().toISOString().slice(0, 10),
+          instructions: instInput ? instInput.value.trim() : 'Take as directed',
+          stockCount: 30,
+          refillThreshold: 5
+        };
+
+        try {
+          await api.createMedication(auth.profile.id, payload);
+          addedCount += 1;
+        } catch (err) {
+          console.error('Failed to create scanned med', err);
+        }
+      }
+
+      ui.closeModal('modal-scan-prescription');
+      ui.showAlert(`Successfully added ${addedCount} medication(s) to CareCircle!`, 'success');
+      await Promise.all([
+        this.loadMedications(auth.profile.id),
+        this.loadTodaySchedule(auth.profile.id)
+      ]);
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.removeAttribute('aria-busy');
+      }
+    }
   },
 
   // --- 3. Safety & Drug Interaction Check ---

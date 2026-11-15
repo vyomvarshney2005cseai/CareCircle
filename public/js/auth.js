@@ -19,6 +19,8 @@ const auth = {
   },
 
   async handleRegisterElder(formData) {
+    const btn = document.querySelector('#form-register button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     try {
       const res = await api.registerElder(formData);
       this.user = res.member;
@@ -27,10 +29,14 @@ const auth = {
       this.renderAppView();
     } catch (err) {
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
     }
   },
 
   async handleJoin(formData) {
+    const btn = document.querySelector('#form-join button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     try {
       const res = await api.join(formData);
       this.user = res.member;
@@ -39,10 +45,14 @@ const auth = {
       this.renderAppView();
     } catch (err) {
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
     }
   },
 
   async handleLogin(formData) {
+    const btn = document.querySelector('#form-login button[type="submit"]');
+    if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     try {
       const res = await api.login(formData);
       this.user = res.member;
@@ -51,6 +61,8 @@ const auth = {
       this.renderAppView();
     } catch (err) {
       ui.showAlert(err.message, 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.removeAttribute('aria-busy'); }
     }
   },
 
