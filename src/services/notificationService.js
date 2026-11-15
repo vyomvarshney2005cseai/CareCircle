@@ -8,6 +8,21 @@ const logger = require('../utils/logger');
 const { ROLES } = require('../constants/roles');
 
 /**
+ * Whether a medication is scheduled on the given date.
+ * @param {object} med Medication record.
+ * @param {string} dateStr YYYY-MM-DD in the profile timezone.
+ * @param {number} dayOfWeek 0=Sun..6=Sat.
+ * @returns {boolean}
+ */
+function isScheduledOn(med, dateStr, dayOfWeek) {
+  return (
+    isDateWithinRange(dateStr, med.startDate, med.endDate) &&
+    Array.isArray(med.daysOfWeek) &&
+    med.daysOfWeek.includes(dayOfWeek)
+  );
+}
+
+/**
  * Notification Service managing proactive schedule reminders, escalations,
  * appointment alerts, refill warnings, and weekly digests.
  */
@@ -92,281 +107,295 @@ class NotificationService {
   async runReminders(refTime = null) {
     const repo = getRepository();
     const profiles = await repo.listProfiles();
-    let sentCount = 0;
-    let missedCount = 0;
+    const totals = { sent: 0, missed: 0 };
 
     for (const profile of profiles) {
-      const tz = profile.timezone || 'Asia/Kolkata';
-      const localNow = refTime ? refTime.setZone(tz) : DateTime.now().setZone(tz);
-      const todayStr = localNow.toFormat('yyyy-MM-dd');
-
-      // Fetch profile members
-      const members = await repo.listMembers(profile.id);
-      const elder = members.find((m) => m.role === ROLES.ELDER && m.active);
-      if (!elder) continue;
-
-      const alertMembers = members.filter(
-        (m) => m.active && m.permissions && m.permissions.receiveAlerts
-      );
-
-      // Escalation thresholds
-      const missedAfterMin = profile.settings?.escalationMinutes?.missedAfter || 30;
-      const alertAfterMin = profile.settings?.escalationMinutes?.alertCaretakerAfter || 60;
-
-      // 1. Process Medications & Doses for both yesterday (for midnight carryover) and today
-      const medications = await repo.listMedications(profile.id, true);
-
-      // Check dates surrounding localNow to cover midnight boundaries: [yesterday, today, tomorrow]
-      const checkDates = [
-        localNow.minus({ days: 1 }).toFormat('yyyy-MM-dd'),
-        localNow.toFormat('yyyy-MM-dd'),
-        localNow.plus({ days: 1 }).toFormat('yyyy-MM-dd')
-      ];
-
-      // Efficiency Optimization: Batch fetch dose logs for the entire active 3-day window once per profile
-      // Avoids N+1 database round-trips inside nested med/time loops
-      const minDateStr = checkDates[0];
-      const maxDateStr = checkDates[checkDates.length - 1];
-      const windowDoseLogs = await repo.listDoseLogs(profile.id, {
-        fromDate: `${minDateStr}T00:00:00.000Z`,
-        toDate: `${maxDateStr}T23:59:59.999Z`
-      });
-
-      const doseLogMap = new Map();
-      windowDoseLogs.forEach((l) => {
-        if (l.id) doseLogMap.set(l.id, l);
-        if (l.medicationId && l.scheduledFor) {
-          doseLogMap.set(`${l.medicationId}_${l.scheduledFor}`, l);
-        }
-      });
-
-      for (const dateStr of checkDates) {
-        const dateObj = DateTime.fromISO(dateStr, { zone: tz });
-        const dayOfWeek = dateObj.weekday % 7; // Luxon: 1=Mon..7=Sun -> 0=Sun..6=Sat
-
-        for (const med of medications) {
-          if (!isDateWithinRange(dateStr, med.startDate, med.endDate)) continue;
-          if (!Array.isArray(med.daysOfWeek) || !med.daysOfWeek.includes(dayOfWeek)) continue;
-
-          const times = Array.isArray(med.times) ? med.times : ['09:00'];
-          for (const time of times) {
-            // Construct scheduled datetime precisely in the profile timezone
-            const scheduledDateTime = DateTime.fromFormat(
-              `${dateStr} ${time}`,
-              'yyyy-MM-dd HH:mm',
-              { zone: tz }
-            );
-            const scheduledIso = scheduledDateTime.toISO();
-
-            // Time difference in minutes from scheduled time to localNow (positive = minutes past schedule)
-            const diffMinutes = localNow.diff(scheduledDateTime, 'minutes').minutes;
-
-            // Only evaluate doses within an active 4-hour window around localNow
-            if (diffMinutes < -30 || diffMinutes > 240) {
-              continue;
-            }
-
-            // Fetch or synthesize dose log status from in-memory batch map (O(1) lookup)
-            const syntheticId = `dose_${med.id}_${dateStr}_${time.replace(':', '')}`;
-            const deterministicLogKey = `${med.id}_${scheduledIso}`;
-
-            const existingLog = doseLogMap.get(syntheticId) || doseLogMap.get(deterministicLogKey);
-            const status = existingLog ? existingLog.status : 'pending';
-
-            // --- A. UPCOMING DOSE REMINDER (15 minutes before schedule) ---
-            if (diffMinutes >= -15 && diffMinutes < 0 && status === 'pending') {
-              const key = NotificationService.generateIdempotencyKey(
-                'DOSE_UPCOMING',
-                med.id,
-                scheduledIso,
-                elder.id
-              );
-              const tpl = templates.upcomingDoseTemplate({
-                elderName: elder.name,
-                medName: med.name,
-                dosage: med.dosage,
-                scheduledTime: time,
-                instructions: med.instructions
-              });
-
-              const res = await this.sendIdempotent(
-                profile.id,
-                key,
-                { to: elder.email, ...tpl },
-                { type: 'DOSE_UPCOMING', entityId: med.id }
-              );
-              if (res.sent) sentCount += 1;
-            }
-
-            // --- B. MISSED DOSE REMINDER (30 min after schedule, mark missed) ---
-            if (
-              diffMinutes >= missedAfterMin &&
-              diffMinutes < alertAfterMin &&
-              status === 'pending'
-            ) {
-              // Update status to 'missed' in repository and cache
-              const savedRecord = await repo.saveDoseLog(
-                profile.id,
-                existingLog?.id || syntheticId,
-                {
-                  medicationId: med.id,
-                  scheduledFor: scheduledIso,
-                  status: 'missed',
-                  recordedBy: 'system-reminder'
-                }
-              );
-              doseLogMap.set(syntheticId, savedRecord);
-              doseLogMap.set(deterministicLogKey, savedRecord);
-              missedCount += 1;
-
-              const key = NotificationService.generateIdempotencyKey(
-                'DOSE_MISSED',
-                med.id,
-                scheduledIso,
-                elder.id
-              );
-              const tpl = templates.missedDoseTemplate({
-                elderName: elder.name,
-                medName: med.name,
-                dosage: med.dosage,
-                scheduledTime: time
-              });
-
-              const res = await this.sendIdempotent(
-                profile.id,
-                key,
-                { to: elder.email, ...tpl },
-                { type: 'DOSE_MISSED', entityId: med.id }
-              );
-              if (res.sent) sentCount += 1;
-            }
-
-            // --- C. ESCALATION ALERT (60 min after schedule, alert caretakers & family) ---
-            if (diffMinutes >= alertAfterMin && status !== 'taken') {
-              for (const member of alertMembers) {
-                // If member is the elder, skip since they already received the missed dose email
-                if (member.id === elder.id) continue;
-
-                const key = NotificationService.generateIdempotencyKey(
-                  'DOSE_ESCALATION',
-                  med.id,
-                  scheduledIso,
-                  member.id
-                );
-                const tpl = templates.escalationAlertTemplate({
-                  memberName: member.name,
-                  elderName: elder.name,
-                  medName: med.name,
-                  dosage: med.dosage,
-                  scheduledTime: time
-                });
-
-                const res = await this.sendIdempotent(
-                  profile.id,
-                  key,
-                  { to: member.email, ...tpl },
-                  { type: 'DOSE_ESCALATION', entityId: med.id }
-                );
-                if (res.sent) sentCount += 1;
-              }
-            }
-          }
-
-          // --- D. REFILL ALERT (once per day max if stock <= threshold) ---
-          if (med.stockCount <= med.refillThreshold) {
-            const refillKey = `REFILL_${med.id}_${todayStr}_${elder.id}`;
-            const tpl = templates.refillAlertTemplate({
-              memberName: elder.name,
-              elderName: elder.name,
-              medName: med.name,
-              stockCount: med.stockCount,
-              refillThreshold: med.refillThreshold
-            });
-            const res = await this.sendIdempotent(
-              profile.id,
-              refillKey,
-              { to: elder.email, ...tpl },
-              { type: 'REFILL_ALERT', entityId: med.id }
-            );
-            if (res.sent) sentCount += 1;
-          }
-        }
-      }
-
-      // --- E. DOCTOR APPOINTMENTS (24 hours and 2 hours before) ---
-      const appointments = await repo.listAppointments(profile.id);
-      for (const appt of appointments) {
-        if (appt.status !== 'scheduled') continue;
-        const apptTime = DateTime.fromISO(appt.dateTime, { zone: tz });
-        const hoursUntil = apptTime.diff(localNow, 'hours').hours;
-        const minutesUntil = apptTime.diff(localNow, 'minutes').minutes;
-
-        const recipients = [elder, ...alertMembers.filter((m) => m.id !== elder.id)];
-
-        // 24-hour reminder window: between 23h and 25h ahead
-        if (hoursUntil >= 23 && hoursUntil <= 25) {
-          for (const member of recipients) {
-            const key = NotificationService.generateIdempotencyKey(
-              'APPT_24H',
-              appt.id,
-              appt.dateTime,
-              member.id
-            );
-            const tpl = templates.appointmentReminderTemplate({
-              memberName: member.name,
-              elderName: elder.name,
-              doctorName: appt.doctorName,
-              specialty: appt.specialty,
-              location: appt.location,
-              formattedDateTime: apptTime.toFormat('ffff'),
-              hoursBefore: 24
-            });
-            const res = await this.sendIdempotent(
-              profile.id,
-              key,
-              { to: member.email, ...tpl },
-              { type: 'APPT_24H', entityId: appt.id }
-            );
-            if (res.sent) sentCount += 1;
-          }
-        }
-
-        // 2-hour reminder window: between 110m and 130m ahead
-        if (minutesUntil >= 110 && minutesUntil <= 130) {
-          for (const member of recipients) {
-            const key = NotificationService.generateIdempotencyKey(
-              'APPT_2H',
-              appt.id,
-              appt.dateTime,
-              member.id
-            );
-            const tpl = templates.appointmentReminderTemplate({
-              memberName: member.name,
-              elderName: elder.name,
-              doctorName: appt.doctorName,
-              specialty: appt.specialty,
-              location: appt.location,
-              formattedDateTime: apptTime.toFormat('ffff'),
-              hoursBefore: 2
-            });
-            const res = await this.sendIdempotent(
-              profile.id,
-              key,
-              { to: member.email, ...tpl },
-              { type: 'APPT_2H', entityId: appt.id }
-            );
-            if (res.sent) sentCount += 1;
-          }
-        }
-      }
+      const result = await this._processProfileReminders(repo, profile, refTime);
+      totals.sent += result.sent;
+      totals.missed += result.missed;
     }
 
     return {
       status: 'completed',
       processedProfiles: profiles.length,
-      dispatchedCount: sentCount,
-      markedMissedCount: missedCount
+      dispatchedCount: totals.sent,
+      markedMissedCount: totals.missed
     };
+  }
+
+  /**
+   * Run every reminder rule (doses, refills, appointments) for one profile.
+   * @private
+   * @param {object} repo Repository instance.
+   * @param {object} profile Elder profile.
+   * @param {DateTime|null} refTime Optional reference time (tests).
+   * @returns {Promise<{sent:number, missed:number}>}
+   */
+  async _processProfileReminders(repo, profile, refTime) {
+    const tz = profile.timezone || 'Asia/Kolkata';
+    const localNow = refTime ? refTime.setZone(tz) : DateTime.now().setZone(tz);
+
+    const members = await repo.listMembers(profile.id);
+    const elder = members.find((m) => m.role === ROLES.ELDER && m.active);
+    if (!elder) return { sent: 0, missed: 0 };
+
+    const ctx = {
+      repo,
+      profile,
+      tz,
+      localNow,
+      todayStr: localNow.toFormat('yyyy-MM-dd'),
+      elder,
+      alertMembers: members.filter((m) => m.active && m.permissions && m.permissions.receiveAlerts),
+      missedAfterMin: profile.settings?.escalationMinutes?.missedAfter || 30,
+      alertAfterMin: profile.settings?.escalationMinutes?.alertCaretakerAfter || 60,
+      sent: 0,
+      missed: 0
+    };
+
+    await this._processMedicationReminders(ctx);
+    await this._processAppointmentReminders(ctx);
+    return { sent: ctx.sent, missed: ctx.missed };
+  }
+
+  /**
+   * Evaluate scheduled doses across yesterday/today/tomorrow (midnight carry-over)
+   * using one batched dose-log read per profile to avoid N+1 queries.
+   * @private
+   * @param {object} ctx Per-profile reminder context.
+   */
+  async _processMedicationReminders(ctx) {
+    const { repo, profile, localNow, tz } = ctx;
+    const medications = await repo.listMedications(profile.id, true);
+    const checkDates = [-1, 0, 1].map((d) => localNow.plus({ days: d }).toFormat('yyyy-MM-dd'));
+
+    const windowDoseLogs = await repo.listDoseLogs(profile.id, {
+      fromDate: `${checkDates[0]}T00:00:00.000Z`,
+      toDate: `${checkDates[checkDates.length - 1]}T23:59:59.999Z`
+    });
+    ctx.doseLogMap = new Map();
+    windowDoseLogs.forEach((l) => {
+      if (l.id) ctx.doseLogMap.set(l.id, l);
+      if (l.medicationId && l.scheduledFor) {
+        ctx.doseLogMap.set(`${l.medicationId}_${l.scheduledFor}`, l);
+      }
+    });
+
+    for (const dateStr of checkDates) {
+      const dayOfWeek = DateTime.fromISO(dateStr, { zone: tz }).weekday % 7; // 0=Sun..6=Sat
+      for (const med of medications) {
+        if (!isScheduledOn(med, dateStr, dayOfWeek)) continue;
+        const times = Array.isArray(med.times) ? med.times : ['09:00'];
+        for (const time of times) {
+          await this._processDose(ctx, med, dateStr, time);
+        }
+        await this._sendRefillAlert(ctx, med);
+      }
+    }
+  }
+
+  /**
+   * Apply upcoming / missed / escalation rules to a single scheduled dose.
+   * @private
+   */
+  async _processDose(ctx, med, dateStr, time) {
+    const scheduled = DateTime.fromFormat(`${dateStr} ${time}`, 'yyyy-MM-dd HH:mm', {
+      zone: ctx.tz
+    });
+    const diffMinutes = ctx.localNow.diff(scheduled, 'minutes').minutes;
+    // Only evaluate doses inside the active window around now
+    if (diffMinutes < -30 || diffMinutes > 240) return;
+
+    const dose = {
+      med,
+      time,
+      scheduledIso: scheduled.toISO(),
+      syntheticId: `dose_${med.id}_${dateStr}_${time.replace(':', '')}`
+    };
+    dose.logKey = `${med.id}_${dose.scheduledIso}`;
+    dose.existingLog = ctx.doseLogMap.get(dose.syntheticId) || ctx.doseLogMap.get(dose.logKey);
+    const status = dose.existingLog ? dose.existingLog.status : 'pending';
+
+    if (diffMinutes >= -15 && diffMinutes < 0 && status === 'pending') {
+      await this._sendUpcomingDose(ctx, dose);
+    }
+    if (
+      diffMinutes >= ctx.missedAfterMin &&
+      diffMinutes < ctx.alertAfterMin &&
+      status === 'pending'
+    ) {
+      await this._markMissedAndNotify(ctx, dose);
+    }
+    if (diffMinutes >= ctx.alertAfterMin && status !== 'taken') {
+      await this._escalateMissedDose(ctx, dose);
+    }
+  }
+
+  /** @private Remind the elder 15 minutes before a dose. */
+  async _sendUpcomingDose(ctx, { med, time, scheduledIso }) {
+    const { elder } = ctx;
+    const key = NotificationService.generateIdempotencyKey(
+      'DOSE_UPCOMING',
+      med.id,
+      scheduledIso,
+      elder.id
+    );
+    const tpl = templates.upcomingDoseTemplate({
+      elderName: elder.name,
+      medName: med.name,
+      dosage: med.dosage,
+      scheduledTime: time,
+      instructions: med.instructions
+    });
+    await this._dispatch(ctx, {
+      key,
+      to: elder.email,
+      tpl,
+      type: 'DOSE_UPCOMING',
+      entityId: med.id
+    });
+  }
+
+  /** @private Mark a pending dose as missed and email the elder. */
+  async _markMissedAndNotify(ctx, dose) {
+    const { repo, profile, elder } = ctx;
+    const { med, time, scheduledIso } = dose;
+    const savedRecord = await repo.saveDoseLog(
+      profile.id,
+      dose.existingLog?.id || dose.syntheticId,
+      {
+        medicationId: med.id,
+        scheduledFor: scheduledIso,
+        status: 'missed',
+        recordedBy: 'system-reminder'
+      }
+    );
+    ctx.doseLogMap.set(dose.syntheticId, savedRecord);
+    ctx.doseLogMap.set(dose.logKey, savedRecord);
+    ctx.missed += 1;
+
+    const key = NotificationService.generateIdempotencyKey(
+      'DOSE_MISSED',
+      med.id,
+      scheduledIso,
+      elder.id
+    );
+    const tpl = templates.missedDoseTemplate({
+      elderName: elder.name,
+      medName: med.name,
+      dosage: med.dosage,
+      scheduledTime: time
+    });
+    await this._dispatch(ctx, {
+      key,
+      to: elder.email,
+      tpl,
+      type: 'DOSE_MISSED',
+      entityId: med.id
+    });
+  }
+
+  /** @private Alert caretakers/family when a dose is still not taken. */
+  async _escalateMissedDose(ctx, { med, time, scheduledIso }) {
+    const { elder } = ctx;
+    for (const member of ctx.alertMembers) {
+      if (member.id === elder.id) continue; // elder already got the missed-dose email
+      const key = NotificationService.generateIdempotencyKey(
+        'DOSE_ESCALATION',
+        med.id,
+        scheduledIso,
+        member.id
+      );
+      const tpl = templates.escalationAlertTemplate({
+        memberName: member.name,
+        elderName: elder.name,
+        medName: med.name,
+        dosage: med.dosage,
+        scheduledTime: time
+      });
+      await this._dispatch(ctx, {
+        key,
+        to: member.email,
+        tpl,
+        type: 'DOSE_ESCALATION',
+        entityId: med.id
+      });
+    }
+  }
+
+  /** @private Refill alert, at most once per day, when stock is at/below threshold. */
+  async _sendRefillAlert(ctx, med) {
+    if (med.stockCount > med.refillThreshold) return;
+    const { elder } = ctx;
+    const tpl = templates.refillAlertTemplate({
+      memberName: elder.name,
+      elderName: elder.name,
+      medName: med.name,
+      stockCount: med.stockCount,
+      refillThreshold: med.refillThreshold
+    });
+    const key = `REFILL_${med.id}_${ctx.todayStr}_${elder.id}`;
+    await this._dispatch(ctx, {
+      key,
+      to: elder.email,
+      tpl,
+      type: 'REFILL_ALERT',
+      entityId: med.id
+    });
+  }
+
+  /**
+   * Appointment reminders 24 hours and 2 hours before the visit.
+   * @private
+   * @param {object} ctx Per-profile reminder context.
+   */
+  async _processAppointmentReminders(ctx) {
+    const { repo, profile, tz, localNow, elder } = ctx;
+    const appointments = await repo.listAppointments(profile.id);
+    const recipients = [elder, ...ctx.alertMembers.filter((m) => m.id !== elder.id)];
+
+    for (const appt of appointments) {
+      if (appt.status !== 'scheduled') continue;
+      const apptTime = DateTime.fromISO(appt.dateTime, { zone: tz });
+      const hoursUntil = apptTime.diff(localNow, 'hours').hours;
+      const minutesUntil = apptTime.diff(localNow, 'minutes').minutes;
+
+      if (hoursUntil >= 23 && hoursUntil <= 25) {
+        await this._sendAppointmentReminder(ctx, appt, apptTime, recipients, 24);
+      }
+      if (minutesUntil >= 110 && minutesUntil <= 130) {
+        await this._sendAppointmentReminder(ctx, appt, apptTime, recipients, 2);
+      }
+    }
+  }
+
+  /** @private Send one appointment reminder window to every recipient. */
+  async _sendAppointmentReminder(ctx, appt, apptTime, recipients, hoursBefore) {
+    const type = hoursBefore === 24 ? 'APPT_24H' : 'APPT_2H';
+    for (const member of recipients) {
+      const key = NotificationService.generateIdempotencyKey(
+        type,
+        appt.id,
+        appt.dateTime,
+        member.id
+      );
+      const tpl = templates.appointmentReminderTemplate({
+        memberName: member.name,
+        elderName: ctx.elder.name,
+        doctorName: appt.doctorName,
+        specialty: appt.specialty,
+        location: appt.location,
+        formattedDateTime: apptTime.toFormat('ffff'),
+        hoursBefore
+      });
+      await this._dispatch(ctx, { key, to: member.email, tpl, type, entityId: appt.id });
+    }
+  }
+
+  /** @private Idempotent send that updates the per-profile sent counter. */
+  async _dispatch(ctx, { key, to, tpl, type, entityId }) {
+    const res = await this.sendIdempotent(ctx.profile.id, key, { to, ...tpl }, { type, entityId });
+    if (res.sent) ctx.sent += 1;
   }
 
   /**
