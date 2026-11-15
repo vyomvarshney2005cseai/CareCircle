@@ -460,7 +460,7 @@ window.app = {
           </div>
           <svg width="100%" height="8" aria-hidden="true">
             <rect width="100%" height="8" rx="4" fill="#F3F4F6"/>
-            <rect width="${stockPct}%" height="8" rx="4" fill="${isLowStock ? '#C62F18' : '#1F7A5C'}"/>
+            <rect width="${stockPct}%" height="8" rx="4" fill="${isLowStock ? '#B3261E' : '#1F7A5C'}"/>
           </svg>
         </div>
 

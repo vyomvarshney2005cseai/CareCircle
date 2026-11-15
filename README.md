@@ -119,16 +119,49 @@ flowchart TD
 
 ---
 
-## ♿ Senior Accessibility (WCAG 2.1 AA)
+## 🎨 Design System & Senior Accessibility (WCAG 2.1 AA Compliant)
 
-- **Typography**: 20px base font size, expandable via A / A+ / A++ controls (20px / 24px / 28px).
-- **High Contrast Mode**: 7:1+ contrast ratio, dark high-contrast themes persisted in `localStorage`.
-- **Large Touch Targets**: All actionable buttons and touch targets are $\ge 48\times 48\text{px}$ (take dose buttons are $\ge 64\text{px}$).
-- **Elder Mode (Simplified)**: One-tap toggle transforms the UI into a distraction-free view showing only today's due medications with giant buttons.
-- **Speech Synthesis**: *"🔊 Read Schedule Aloud"* speaks medication names, times, dosages, and instructions clearly.
-- **Voice Mic Input**: Enables hands-free natural-language input for seniors with hand tremors.
-- **Keyboard Navigation**: Skip-to-main-content link, logical tab stops, visible high-contrast focus rings, and Escape key modal dismissals.
-- **Non-Color Reliance**: Doses use dual indicators (color + distinct status badges: `✓ TAKEN`, `⚠️ MISSED`, `🕒 SNOOZED`, `⏳ DUE`).
+CareCircle features a custom, senior-centered design system built without heavy frameworks or build steps. It combines a calming, trustworthy visual aesthetic with rigorous accessibility engineering.
+
+### 1. Color Palette & WCAG 2.1 AA Contrast Ratios
+
+All foreground and background color combinations have been mathematically validated to meet or exceed WCAG 2.1 AA contrast requirements ($\ge 4.5:1$ for normal text, $\ge 7.0:1$ for high-contrast mode):
+
+| UI Token | Hex Code | Background | Computed Contrast Ratio | WCAG Compliance |
+| :--- | :--- | :--- | :--- | :--- |
+| **Page Background** | `--bg: #FFF8F1` | — | Soft, warm cream | Base Canvas |
+| **Surface Card** | `--surface: #FFFFFF` | `#FFF8F1` | 1.05:1 | Layered Soft Shadow |
+| **Primary Ink** | `--ink: #1F2A37` | `#FFFFFF` | **14.54:1** | Pass (AAA) |
+| **Secondary Ink** | `--ink-soft: #4B5563` | `#FFFFFF` | **7.56:1** | Pass (AAA) |
+| **Primary Brand** | `--primary: #1F7A5C` | `#FFFFFF` | **5.25:1** | Pass (AA) |
+| **White on Primary**| `#FFFFFF` | `#1F7A5C` | **5.25:1** | Pass (AA) |
+| **CTA Yellow** | `--cta: #FFC94A` | Dark Ink `#1F2A37` | **9.49:1** | Pass (AAA) |
+| **Status Taken** | `--status-taken: #1F7A5C` | `#E3F4EC` | **4.61:1** | Pass (AA) |
+| **Status Pending** | `--status-pending: #8A5300` | `#FEF3C7` | **5.68:1** | Pass (AA) |
+| **Status Missed** | `--status-missed: #B3261E` | `#FEE2E2` | **5.35:1** | Pass (AA) |
+| **Status Snoozed** | `--status-snoozed: #1F6FA6` | `#E0F2FE` | **4.71:1** | Pass (AA) |
+| **High-Contrast Dark** | `#000000` | `#FFFFFF` | **21.00:1** | Pass (AAA Max) |
+| **High-Contrast Yellow**| `#FFFF00` | `#000000` | **19.56:1** | Pass (AAA Max) |
+
+### 2. Dual Indicators (Zero Non-Color Reliance)
+In accordance with WCAG Guideline 1.4.1, color is never used as the sole visual means of conveying information. Every status chip pairs a dedicated inline SVG line icon with explicit text labels:
+- **Taken**: `<svg><use href="#icon-check"/></svg> TAKEN`
+- **Due**: `<svg><use href="#icon-clock"/></svg> DUE`
+- **Missed**: `<svg><use href="#icon-alert"/></svg> MISSED`
+- **Snoozed**: `<svg><use href="#icon-snooze"/></svg> SNOOZED`
+
+### 3. Accessible Responsive Shell
+- **Desktop ($\ge 1024\text{px}$)**: Ergonomic left sidebar containing primary navigation links (Today, Medicines, Calendar, Care Circle, Health, Activity Log, Notifications) alongside a centered, constrained reading column.
+- **Mobile ($\le 1023\text{px}$)**: Fixed bottom navigation bar featuring the 4 core daily tabs (*Today*, *Medicines*, *Calendar*, *Circle*) plus an accessible native slide-up *"More"* sheet containing Health trends, Reminders, and Circle activity.
+- **Strict Content Security Policy (CSP)**: Completely eliminates `'unsafe-inline'` from both `scriptSrc` and `styleSrc`. Dynamic layouts leverage semantic CSS classes and SVG presentation attributes.
+
+### 4. Senior-First Assistive Features
+- **Typography Scaling**: Base 20px typography, instantly scalable via senior toolbar buttons (**A** 20px, **A+** 24px, **A++** 28px). Headings set in Fraunces serif; body in Nunito sans.
+- **Giant Touch Targets**: Minimum $48\times 48\text{px}$ touch targets across all interactive elements, expanding to $64\text{px}$ for the hero *"I took it"* button.
+- **Simplified Elder Mode**: Toggles off secondary navigation and administrative tabs, showing only today's due medications with large one-tap buttons.
+- **Voice Readout & Recognition**: Web Speech API audio synthesis reads out the day's routine aloud; browser-native speech recognition provides voice dictation for elderly users with tremors.
+- **WAI-ARIA Landmarks & Keyboard Navigation**: Full keyboard navigation with skip-to-content link, arrow-key tab navigation, visible focus rings, and `aria-live="polite"` regions for real-time status updates.
+
 
 ---
 
