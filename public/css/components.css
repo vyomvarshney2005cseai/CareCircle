@@ -513,6 +513,12 @@ textarea.form-control {
   border: 2px dashed var(--primary);
   padding: 36px 20px;
   cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scan-dropzone:hover, .scan-dropzone.dragover {
+  border-color: var(--primary-deep);
+  background: var(--primary-soft);
 }
 
 .scan-dropzone-icon {

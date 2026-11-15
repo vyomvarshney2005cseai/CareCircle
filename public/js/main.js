@@ -301,19 +301,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     dropzone.addEventListener('dragover', (e) => {
       e.preventDefault();
-      dropzone.style.borderColor = '#0284c7';
-      dropzone.style.backgroundColor = '#f0f9ff';
+      dropzone.classList.add('dragover');
     });
 
     dropzone.addEventListener('dragleave', () => {
-      dropzone.style.borderColor = '#94a3b8';
-      dropzone.style.backgroundColor = '';
+      dropzone.classList.remove('dragover');
     });
 
     dropzone.addEventListener('drop', (e) => {
       e.preventDefault();
-      dropzone.style.borderColor = '#94a3b8';
-      dropzone.style.backgroundColor = '';
+      dropzone.classList.remove('dragover');
       if (e.dataTransfer.files && e.dataTransfer.files[0]) {
         app.handleScanPrescription(e.dataTransfer.files[0]);
       }
@@ -359,7 +356,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!speech.isRecognitionSupported()) {
       micBtn.title = 'Voice input not supported in this browser. Please type below.';
       micBtn.setAttribute('aria-disabled', 'true');
-      micBtn.style.opacity = '0.6';
+      micBtn.classList.add('disabled');
     }
     micBtn.addEventListener('click', () => {
       if (!speech.isRecognitionSupported()) {
@@ -369,6 +366,33 @@ document.addEventListener('DOMContentLoaded', async () => {
       app.handleMicInput();
     });
   }
+
+  // 4. Health Adherence Timeframe Segmented Control
+  const segmentedBtns = document.querySelectorAll('.segmented-control .segmented-btn');
+  segmentedBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      segmentedBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const range = btn.dataset.range || '7';
+      const summaryLabel = document.getElementById('chart-summary-label');
+      const areaPath = document.getElementById('chart-area-path');
+      const linePath = document.getElementById('chart-line-path');
+
+      if (range === '7') {
+        if (summaryLabel) summaryLabel.textContent = 'Adherence trending strong over 7 days';
+        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 70 Q 140 50 220 80 T 380 60 T 540 50 L 540 180 Z');
+        if (linePath) linePath.setAttribute('d', 'M 60 70 Q 140 50 220 80 T 380 60 T 540 50');
+      } else if (range === '30') {
+        if (summaryLabel) summaryLabel.textContent = 'Adherence average 94% across 30 days';
+        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 85 Q 140 65 220 70 T 380 55 T 540 45 L 540 180 Z');
+        if (linePath) linePath.setAttribute('d', 'M 60 85 Q 140 65 220 70 T 380 55 T 540 45');
+      } else {
+        if (summaryLabel) summaryLabel.textContent = 'Long-term consistency high across 90 days';
+        if (areaPath) areaPath.setAttribute('d', 'M 60 180 L 60 90 Q 140 80 220 60 T 380 50 T 540 40 L 540 180 Z');
+        if (linePath) linePath.setAttribute('d', 'M 60 90 Q 140 80 220 60 T 380 50 T 540 40');
+      }
+    });
+  });
 
   // Check existing session
   await auth.checkSession();

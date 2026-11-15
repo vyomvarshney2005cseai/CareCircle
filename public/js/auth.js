@@ -79,6 +79,11 @@ const auth = {
     const elderNameSpan = document.getElementById('header-elder-name');
     if (elderNameSpan) elderNameSpan.textContent = this.profile.elderName;
 
+    const headerAvatar = document.getElementById('header-avatar');
+    if (headerAvatar && this.profile.elderName) {
+      headerAvatar.textContent = this.profile.elderName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'CC';
+    }
+
     const profileIdSpan = document.getElementById('header-profile-id');
     if (profileIdSpan) profileIdSpan.textContent = `Circle ID: ${this.profile.id.slice(0, 8)}...`;
 

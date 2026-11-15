@@ -39,81 +39,238 @@ window.app = {
   renderTodaySchedule(schedule) {
     const listEl = document.getElementById('today-doses-list');
     const emptyEl = document.getElementById('today-empty-state');
+    const heroContainer = document.getElementById('hero-next-dose-container');
+    const greetingNameEl = document.getElementById('today-greeting-name');
+    const dateEl = document.getElementById('today-current-date');
+    const ringProgressEl = document.getElementById('today-ring-progress');
+    const ringRatioEl = document.getElementById('today-ring-ratio');
+    const healthStatTodayEl = document.getElementById('health-stat-today');
+
     if (!listEl) return;
 
-    listEl.innerHTML = '';
+    // 1. Update greeting and current formatted date
+    const elderName = auth.profile ? (auth.profile.elderName || 'Elder') : 'Friend';
+    if (greetingNameEl) {
+      if (auth.user && auth.user.role === 'elder') {
+        greetingNameEl.textContent = elderName;
+      } else if (auth.user) {
+        greetingNameEl.textContent = `${auth.user.name} (caring for ${elderName})`;
+      } else {
+        greetingNameEl.textContent = elderName;
+      }
+    }
 
-    if (!schedule.doses || schedule.doses.length === 0) {
+    if (dateEl) {
+      dateEl.textContent = new Date().toLocaleDateString(undefined, {
+        weekday: 'long',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    const doses = schedule.doses || [];
+    const totalCount = doses.length;
+    const takenCount = doses.filter((d) => d.status === 'taken').length;
+
+    // 2. Update Adherence Ring & Today Stat
+    if (ringRatioEl) {
+      ringRatioEl.textContent = `${takenCount}/${totalCount}`;
+    }
+    if (ringProgressEl) {
+      const circumference = 238.76;
+      const fraction = totalCount > 0 ? (takenCount / totalCount) : 0;
+      const offset = circumference * (1 - fraction);
+      ringProgressEl.setAttribute('stroke-dashoffset', offset.toFixed(1));
+    }
+    if (healthStatTodayEl) {
+      const todayPct = totalCount > 0 ? Math.round((takenCount / totalCount) * 100) : 100;
+      healthStatTodayEl.textContent = `${todayPct}%`;
+    }
+
+    // 3. Reset list and hero
+    listEl.innerHTML = '';
+    if (heroContainer) heroContainer.innerHTML = '';
+
+    if (totalCount === 0) {
       if (emptyEl) emptyEl.classList.remove('hidden');
       return;
     }
     if (emptyEl) emptyEl.classList.add('hidden');
 
-    schedule.doses.forEach((dose) => {
-      const card = document.createElement('article');
-      card.className = `dose-card status-${dose.status}`;
-      const safeMedName = ui.escapeHtml(dose.medicationName);
-      const safeTime = ui.escapeHtml(dose.scheduledTime);
-      const safeDosage = ui.escapeHtml(dose.dosage);
-      const safeForm = ui.escapeHtml(dose.form);
-      const safeInstructions = ui.escapeHtml(dose.instructions);
+    // 4. Hero Next Dose Card
+    const nextDose = doses.find((d) => d.status === 'pending' || d.status === 'snoozed' || d.status === 'missed');
 
-      card.setAttribute('aria-label', `Dose ${safeMedName} scheduled for ${safeTime}`);
+    if (nextDose && heroContainer) {
+      const heroCard = document.createElement('article');
+      heroCard.className = 'hero-card mb-lg';
+      heroCard.setAttribute('aria-label', `Next action: ${nextDose.medicationName} due at ${nextDose.scheduledTime}`);
 
-      const isTaken = dose.status === 'taken';
+      const safeMedName = ui.escapeHtml(nextDose.medicationName);
+      const safeTime = ui.escapeHtml(nextDose.scheduledTime);
+      const safeDosage = ui.escapeHtml(nextDose.dosage);
+      const safeForm = ui.escapeHtml(nextDose.form);
+      const safeInstructions = ui.escapeHtml(nextDose.instructions || 'Take as directed');
+      const isMissed = nextDose.status === 'missed';
 
-      let statusBadge = '';
-      if (dose.status === 'taken') {
-        statusBadge = '<span class="badge badge-taken" aria-label="Status: Taken">✓ TAKEN</span>';
-      } else if (dose.status === 'missed') {
-        statusBadge = '<span class="badge badge-missed" aria-label="Status: Missed">⚠️ MISSED</span>';
-      } else if (dose.status === 'snoozed') {
-        statusBadge = '<span class="badge badge-snoozed" aria-label="Status: Snoozed">🕒 SNOOZED</span>';
-      } else {
-        statusBadge = '<span class="badge badge-pending" aria-label="Status: Due">⏳ DUE / SCHEDULED</span>';
-      }
-
-      card.innerHTML = `
-        <div class="dose-header">
-          <div class="dose-time"><span aria-hidden="true">⏰</span> ${safeTime}</div>
-          <div>
-            ${statusBadge}
-            ${dose.isLowStock ? '<span class="badge badge-low-stock" aria-label="Low stock warning">📦 LOW STOCK (' + Number(dose.stockCount) + ' left)</span>' : ''}
-          </div>
+      heroCard.innerHTML = `
+        <div class="flex-between mb-sm flex-wrap gap-xs">
+          <span class="chip ${isMissed ? 'chip-missed' : 'chip-pending'}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-${isMissed ? 'alert' : 'clock'}"/></svg>
+            <span>${isMissed ? 'MISSED DOSE' : 'NEXT DOSE DUE'} • ${safeTime}</span>
+          </span>
+          ${nextDose.isLowStock ? `
+            <span class="chip chip-missed">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg>
+              <span>Low Stock (${Number(nextDose.stockCount)} left)</span>
+            </span>
+          ` : ''}
         </div>
-        <div class="dose-med-name">${safeMedName}</div>
-        <div class="dose-dosage-form">${safeDosage} • ${safeForm} (Stock remaining: ${Number(dose.stockCount)})</div>
-        <div class="dose-instructions">💡 Instructions: ${safeInstructions}</div>
-
-        <button type="button" class="btn btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled aria-disabled="true"' : ''} aria-label="${isTaken ? 'Dose already recorded as taken' : 'Confirm taking ' + safeMedName}">
-          ${isTaken ? '✓ Taken at ' + new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '✓ I TOOK THIS MEDICINE'}
+        <h3 class="hero-dose-name mb-xs">${safeMedName}</h3>
+        <div class="hero-dose-meta mb-sm">${safeDosage} • ${safeForm}</div>
+        <div class="dose-instructions mb-md">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-document"/></svg>
+          <span>${safeInstructions}</span>
+        </div>
+        <button type="button" class="btn btn-hero-take btn-huge-take action-take mb-sm" data-dose-id="${nextDose.id}" aria-label="Confirm taking ${safeMedName}">
+          <svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg>
+          <span>I took it</span>
         </button>
-
-        ${!isTaken ? `
-          <div class="dose-actions-row">
-            <button type="button" class="btn btn-secondary action-skip" data-dose-id="${dose.id}" aria-label="Skip dose for ${safeMedName}">Skip Dose</button>
-            <button type="button" class="btn btn-secondary action-snooze" data-dose-id="${dose.id}" aria-label="Snooze reminder for 30 minutes">Snooze 30m</button>
-          </div>
-        ` : ''}
+        <div class="dose-actions-row">
+          <button type="button" class="btn btn-hero-snooze action-snooze" data-dose-id="${nextDose.id}" aria-label="Remind me later for ${safeMedName}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-snooze"/></svg>
+            <span>Remind me later</span>
+          </button>
+          <button type="button" class="btn btn-hero-skip action-skip" data-dose-id="${nextDose.id}" aria-label="Skip dose for ${safeMedName}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-skip"/></svg>
+            <span>Skip</span>
+          </button>
+        </div>
       `;
 
-      // Event handlers
-      const takeBtn = card.querySelector('.btn-huge-take');
-      if (takeBtn && !isTaken) {
-        takeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'taken', dose.medicationName));
-      }
+      heroCard.querySelector('.action-take').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'taken', nextDose.medicationName));
+      heroCard.querySelector('.action-snooze').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'snoozed', nextDose.medicationName));
+      heroCard.querySelector('.action-skip').addEventListener('click', () => this.handleDoseAction(nextDose.id, 'skipped', nextDose.medicationName));
 
-      const skipBtn = card.querySelector('.action-skip');
-      if (skipBtn) {
-        skipBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'skipped', dose.medicationName));
-      }
+      heroContainer.appendChild(heroCard);
+    } else if (totalCount > 0 && heroContainer) {
+      const celebrateCard = document.createElement('div');
+      celebrateCard.className = 'hero-card text-center mb-lg';
+      celebrateCard.innerHTML = `
+        <svg class="icon icon-hero mx-auto mb-xs text-primary" aria-hidden="true"><use href="#icon-check"/></svg>
+        <h3 class="mb-xs">All Doses Complete for Today</h3>
+        <p class="text-muted text-sm">Every scheduled dose has been taken. Well done maintaining routine!</p>
+      `;
+      heroContainer.appendChild(celebrateCard);
+    }
 
-      const snoozeBtn = card.querySelector('.action-snooze');
-      if (snoozeBtn) {
-        snoozeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'snoozed', dose.medicationName));
-      }
+    // 5. Group doses into Timeline sections
+    const morningDoses = [];
+    const afternoonDoses = [];
+    const eveningDoses = [];
 
-      listEl.appendChild(card);
+    doses.forEach((d) => {
+      const time = d.scheduledTime || '00:00';
+      if (time < '12:00') {
+        morningDoses.push(d);
+      } else if (time < '18:00') {
+        afternoonDoses.push(d);
+      } else {
+        eveningDoses.push(d);
+      }
+    });
+
+    const sections = [
+      { name: 'Morning (Before 12:00 PM)', icon: 'sun', doses: morningDoses },
+      { name: 'Afternoon (12:00 PM – 6:00 PM)', icon: 'sun', doses: afternoonDoses },
+      { name: 'Evening (After 6:00 PM)', icon: 'moon', doses: eveningDoses }
+    ];
+
+    sections.forEach((sec) => {
+      if (sec.doses.length === 0) return;
+
+      const titleEl = document.createElement('div');
+      titleEl.className = 'timeline-section-title';
+      titleEl.innerHTML = `
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-${sec.icon}"/></svg>
+        <span>${sec.name}</span>
+      `;
+      listEl.appendChild(titleEl);
+
+      sec.doses.forEach((dose) => {
+        const card = document.createElement('article');
+        card.className = `dose-card status-${dose.status}`;
+        const safeMedName = ui.escapeHtml(dose.medicationName);
+        const safeTime = ui.escapeHtml(dose.scheduledTime);
+        const safeDosage = ui.escapeHtml(dose.dosage);
+        const safeForm = ui.escapeHtml(dose.form);
+        const safeInstructions = ui.escapeHtml(dose.instructions || 'Take as directed');
+
+        card.setAttribute('aria-label', `Dose ${safeMedName} scheduled for ${safeTime}`);
+
+        const isTaken = dose.status === 'taken';
+
+        let statusChip = '';
+        if (dose.status === 'taken') {
+          statusChip = '<span class="chip chip-taken"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-check"/></svg> TAKEN</span>';
+        } else if (dose.status === 'missed') {
+          statusChip = '<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> MISSED</span>';
+        } else if (dose.status === 'snoozed') {
+          statusChip = '<span class="chip chip-info"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-snooze"/></svg> SNOOZED</span>';
+        } else {
+          statusChip = '<span class="chip chip-pending"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg> DUE</span>';
+        }
+
+        card.innerHTML = `
+          <div class="dose-header">
+            <div class="dose-time"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg> <span>${safeTime}</span></div>
+            <div class="flex gap-xs flex-wrap">
+              ${statusChip}
+              ${dose.isLowStock ? '<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> Low Stock (' + Number(dose.stockCount) + ' left)</span>' : ''}
+            </div>
+          </div>
+          <div class="dose-med-name">${safeMedName}</div>
+          <div class="dose-dosage-form">${safeDosage} • ${safeForm} (Stock remaining: ${Number(dose.stockCount)})</div>
+          <div class="dose-instructions">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-document"/></svg>
+            <span>${safeInstructions}</span>
+          </div>
+
+          <button type="button" class="btn btn-primary btn-huge-take ${isTaken ? 'taken' : ''}" data-dose-id="${dose.id}" ${isTaken ? 'disabled aria-disabled="true"' : ''} aria-label="${isTaken ? 'Dose already recorded as taken' : 'Confirm taking ' + safeMedName}">
+            <svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg>
+            <span>${isTaken ? 'Taken at ' + new Date(dose.takenAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'I took it'}</span>
+          </button>
+
+          ${!isTaken ? `
+            <div class="dose-actions-row">
+              <button type="button" class="btn btn-secondary action-snooze" data-dose-id="${dose.id}" aria-label="Snooze reminder for 30 minutes">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-snooze"/></svg>
+                <span>Remind me later</span>
+              </button>
+              <button type="button" class="btn btn-secondary action-skip" data-dose-id="${dose.id}" aria-label="Skip dose for ${safeMedName}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-skip"/></svg>
+                <span>Skip</span>
+              </button>
+            </div>
+          ` : ''}
+        `;
+
+        const takeBtn = card.querySelector('.btn-huge-take');
+        if (takeBtn && !isTaken) {
+          takeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'taken', dose.medicationName));
+        }
+
+        const skipBtn = card.querySelector('.action-skip');
+        if (skipBtn) {
+          skipBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'skipped', dose.medicationName));
+        }
+
+        const snoozeBtn = card.querySelector('.action-snooze');
+        if (snoozeBtn) {
+          snoozeBtn.addEventListener('click', () => this.handleDoseAction(dose.id, 'snoozed', dose.medicationName));
+        }
+
+        listEl.appendChild(card);
+      });
     });
   },
 
@@ -153,8 +310,13 @@ window.app = {
       const stats = await api.getAdherence(profileId);
       const val7 = document.getElementById('adherence-7d-val');
       const val30 = document.getElementById('adherence-30d-val');
+      const healthStat7 = document.getElementById('health-stat-7d');
+      const healthStat30 = document.getElementById('health-stat-30d');
+
       if (val7) val7.textContent = `${stats.sevenDays.rate}%`;
       if (val30) val30.textContent = `${stats.thirtyDays.rate}%`;
+      if (healthStat7) healthStat7.textContent = `${stats.sevenDays.rate}%`;
+      if (healthStat30) healthStat30.textContent = `${stats.thirtyDays.rate}%`;
     } catch (err) {
       console.error('Failed to load adherence', err);
     }
@@ -185,19 +347,24 @@ window.app = {
 
       pending.forEach((change) => {
         const item = document.createElement('div');
-        item.className = 'card';
-        item.style.marginBottom = '12px';
+        item.className = 'card mb-sm';
         const safeProposedBy = ui.escapeHtml(change.proposedByName);
         const safeSummary = ui.escapeHtml(change.summary);
         item.innerHTML = `
-          <div class="flex-between">
+          <div class="flex-between flex-wrap gap-xs">
             <div>
               <strong>Proposed by ${safeProposedBy}:</strong> ${safeSummary}
-              <div style="font-size:0.85em; color:var(--text-muted);">${new Date(change.createdAt).toLocaleString()}</div>
+              <div class="text-xs text-muted mt-xs">${new Date(change.createdAt).toLocaleString()}</div>
             </div>
-            <div style="display:flex; gap:8px;">
-              <button class="btn btn-success action-approve" data-id="${change.id}">Approve</button>
-              <button class="btn btn-danger action-reject" data-id="${change.id}">Reject</button>
+            <div class="flex gap-xs">
+              <button class="btn btn-primary btn-sm action-approve" data-id="${change.id}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-check"/></svg>
+                <span>Approve</span>
+              </button>
+              <button class="btn btn-secondary btn-sm action-reject" data-id="${change.id}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+                <span>Reject</span>
+              </button>
             </div>
           </div>
         `;
@@ -238,31 +405,68 @@ window.app = {
     listEl.innerHTML = '';
 
     if (!meds || meds.length === 0) {
-      listEl.innerHTML = '<p style="color:var(--text-muted);">No medications added yet.</p>';
+      listEl.innerHTML = `
+        <div class="card empty-state">
+          <svg class="empty-state-illustration" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+            <circle cx="60" cy="60" r="54" fill="#E3F4EC" />
+            <path d="M44 76L76 44M52 36L84 68" stroke="#1F7A5C" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+          <h3 class="empty-state-title">No Medications Added Yet</h3>
+          <p class="empty-state-desc">Keep your routine organized by adding daily prescriptions and refill reminders.</p>
+        </div>
+      `;
       return;
     }
 
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
     meds.forEach((m) => {
       const card = document.createElement('div');
-      card.className = 'card';
-      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      card.className = 'card mb-md';
       const dayNames = m.daysOfWeek.map((d) => days[d]).join(', ');
       const safeName = ui.escapeHtml(m.name);
       const safeDosage = ui.escapeHtml(m.dosage);
       const safeTimes = ui.escapeHtml(m.times.join(', '));
-      const safeInstructions = ui.escapeHtml(m.instructions);
+      const safeInstructions = ui.escapeHtml(m.instructions || 'Take as prescribed');
+      const isLowStock = m.stockCount <= m.refillThreshold;
+      const stockPct = Math.min(100, Math.round((m.stockCount / Math.max(m.stockCount, 30)) * 100));
 
       card.innerHTML = `
-        <div class="flex-between">
+        <div class="flex-between flex-wrap gap-sm mb-sm">
           <div>
-            <h3 style="font-size:1.25em;">${safeName} (${safeDosage})</h3>
-            <p style="color:var(--text-muted);">Times: ${safeTimes} • Days: ${dayNames}</p>
-            <p>Stock: <strong>${Number(m.stockCount)}</strong> ${m.stockCount <= m.refillThreshold ? '<span class="badge badge-low-stock">REFILL NEEDED</span>' : ''}</p>
-            <p style="font-size:0.9em; margin-top:4px;"><em>${safeInstructions}</em></p>
+            <h3 class="mb-xs">${safeName} <span class="text-muted text-md font-sans">(${safeDosage})</span></h3>
+            <div class="flex gap-xs flex-wrap mb-xs">
+              <span class="chip"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg> ${safeTimes}</span>
+              <span class="chip"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-calendar"/></svg> ${dayNames}</span>
+            </div>
           </div>
           <div>
-            <button class="btn btn-secondary action-delete-med" data-id="${m.id}">Delete</button>
+            <button class="btn btn-secondary btn-sm action-delete-med" data-id="${m.id}" aria-label="Remove ${safeName}">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+              <span>Delete</span>
+            </button>
           </div>
+        </div>
+
+        <div class="stock-bar-wrap mb-sm">
+          <div class="flex-between text-sm mb-xs">
+            <span>Inventory Stock: <strong>${Number(m.stockCount)} units remaining</strong></span>
+            ${isLowStock ? `
+              <span class="chip chip-missed">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg>
+                <span>Refill Needed (Alert at &le; ${m.refillThreshold})</span>
+              </span>
+            ` : `<span class="text-muted text-xs">Refill alert at &le; ${m.refillThreshold}</span>`}
+          </div>
+          <svg width="100%" height="8" aria-hidden="true">
+            <rect width="100%" height="8" rx="4" fill="#F3F4F6"/>
+            <rect width="${stockPct}%" height="8" rx="4" fill="${isLowStock ? '#C62F18' : '#1F7A5C'}"/>
+          </svg>
+        </div>
+
+        <div class="dose-instructions text-sm">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-document"/></svg>
+          <span>${safeInstructions}</span>
         </div>
       `;
 
@@ -315,11 +519,45 @@ window.app = {
   renderAppointments(appts) {
     const listEl = document.getElementById('appointments-list');
     const bannerEl = document.getElementById('next-appointment-banner');
+    const stripEl = document.getElementById('calendar-date-strip');
     if (!listEl) return;
     listEl.innerHTML = '';
 
+    // Populate 7-day strip
+    if (stripEl) {
+      stripEl.innerHTML = '';
+      const today = new Date();
+      for (let i = -1; i <= 5; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        const isToday = i === 0;
+        const dow = d.toLocaleDateString(undefined, { weekday: 'short' });
+        const dayNum = d.getDate();
+        const dateStr = d.toISOString().slice(0, 10);
+        const hasAppt = appts && appts.some((a) => a.dateTime && a.dateTime.startsWith(dateStr));
+
+        const pill = document.createElement('div');
+        pill.className = `date-pill ${isToday ? 'active' : ''}`;
+        pill.innerHTML = `
+          <span class="date-pill-dow">${dow}</span>
+          <span class="date-pill-day">${dayNum}</span>
+          ${hasAppt ? '<span class="has-appt-dot" aria-hidden="true"></span>' : ''}
+        `;
+        stripEl.appendChild(pill);
+      }
+    }
+
     if (!appts || appts.length === 0) {
-      listEl.innerHTML = '<p style="color:var(--text-muted);">No upcoming appointments scheduled.</p>';
+      listEl.innerHTML = `
+        <div class="card empty-state">
+          <svg class="empty-state-illustration" viewBox="0 0 120 120" fill="none" aria-hidden="true">
+            <circle cx="60" cy="60" r="54" fill="#E3F4EC" />
+            <path d="M40 50H80M40 65H65M48 35V45M72 35V45" stroke="#1F7A5C" stroke-width="6" stroke-linecap="round"/>
+          </svg>
+          <h3 class="empty-state-title">No Appointments Scheduled</h3>
+          <p class="empty-state-desc">Upcoming clinical visits and doctor consultations will appear here.</p>
+        </div>
+      `;
       if (bannerEl) bannerEl.classList.add('hidden');
       return;
     }
@@ -329,14 +567,18 @@ window.app = {
     if (nextAppt && bannerEl) {
       bannerEl.classList.remove('hidden');
       document.getElementById('next-appt-text').textContent =
-        `Next: Dr. ${nextAppt.doctorName} (${nextAppt.specialty}) on ${new Date(nextAppt.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} at ${nextAppt.location}`;
+        `Dr. ${nextAppt.doctorName} (${nextAppt.specialty}) on ${new Date(nextAppt.dateTime).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })} at ${nextAppt.location}`;
     } else if (bannerEl) {
       bannerEl.classList.add('hidden');
     }
 
     appts.forEach((a) => {
       const card = document.createElement('div');
-      card.className = 'card';
+      const apptTime = new Date(a.dateTime).getTime();
+      const now = Date.now();
+      const isUrgent = apptTime > now && (apptTime - now < 24 * 3600 * 1000);
+      card.className = `card appointment-card mb-md ${isUrgent ? 'urgent-24h' : ''}`;
+
       const safeDoctor = ui.escapeHtml(a.doctorName);
       const safeStatus = ui.escapeHtml(a.status);
       const safeSpecialty = ui.escapeHtml(a.specialty);
@@ -344,21 +586,86 @@ window.app = {
       const safeNotes = a.notes ? ui.escapeHtml(a.notes) : '';
 
       card.innerHTML = `
-        <div class="flex-between">
+        <div class="flex-between flex-wrap gap-sm mb-sm">
           <div>
-            <h3 style="font-size:1.25em;">Dr. ${safeDoctor} <span class="badge badge-pending">${safeStatus}</span></h3>
-            <p style="color:var(--primary); font-weight:700;">${new Date(a.dateTime).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' })}</p>
-            <p>${safeSpecialty} • 📍 ${safeLocation}</p>
-            ${safeNotes ? `<p style="font-size:0.9em; color:var(--text-muted); margin-top:4px;">Notes: ${safeNotes}</p>` : ''}
+            <div class="flex items-center gap-xs mb-xs">
+              <h3 class="mb-none">Dr. ${safeDoctor}</h3>
+              <span class="chip chip-pending">${safeStatus.toUpperCase()}</span>
+              ${isUrgent ? '<span class="chip chip-missed"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg> NEXT 24 HOURS</span>' : ''}
+            </div>
+            <div class="text-primary text-bold mb-xs">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-clock"/></svg>
+              <span>${new Date(a.dateTime).toLocaleString([], { dateStyle: 'full', timeStyle: 'short' })}</span>
+            </div>
+            <div class="flex gap-xs flex-wrap mb-xs">
+              <span class="chip"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-stethoscope"/></svg> ${safeSpecialty}</span>
+              <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.location)}" target="_blank" rel="noopener noreferrer" class="chip" aria-label="Open directions to ${safeLocation} in Google Maps">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-map-pin"/></svg>
+                <span>${safeLocation}</span>
+              </a>
+            </div>
+            ${safeNotes ? `
+              <div class="dose-instructions text-sm mt-xs">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-document"/></svg>
+                <span>${safeNotes}</span>
+              </div>
+            ` : ''}
           </div>
-          <div>
-            <button class="btn btn-secondary action-delete-appt" data-id="${a.id}">Cancel</button>
+          <div class="flex flex-col gap-xs">
+            <button class="btn btn-secondary btn-sm action-ics-download" data-id="${a.id}" aria-label="Download calendar invite for Dr. ${safeDoctor}">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-calendar"/></svg>
+              <span>Add to Calendar</span>
+            </button>
+            <button class="btn btn-secondary btn-sm action-delete-appt" data-id="${a.id}" aria-label="Cancel appointment with Dr. ${safeDoctor}">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+              <span>Cancel</span>
+            </button>
           </div>
         </div>
       `;
+
       card.querySelector('.action-delete-appt').addEventListener('click', () => this.deleteAppt(a.id));
+
+      const icsBtn = card.querySelector('.action-ics-download');
+      if (icsBtn) {
+        icsBtn.addEventListener('click', () => this.downloadIcs(a));
+      }
+
       listEl.appendChild(card);
     });
+  },
+
+  downloadIcs(appt) {
+    const startDate = new Date(appt.dateTime);
+    const endDate = new Date(startDate.getTime() + 60 * 60 * 1000);
+    const formatIcsDate = (d) => d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+
+    const icsContent = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//CareCircle//Elder Care Platform//EN',
+      'BEGIN:VEVENT',
+      `UID:${appt.id}@carecircle.app`,
+      `DTSTAMP:${formatIcsDate(new Date())}`,
+      `DTSTART:${formatIcsDate(startDate)}`,
+      `DTEND:${formatIcsDate(endDate)}`,
+      `SUMMARY:Doctor Appointment: Dr. ${appt.doctorName} (${appt.specialty})`,
+      `LOCATION:${appt.location}`,
+      `DESCRIPTION:${appt.notes || 'CareCircle medical appointment'}`,
+      'END:VEVENT',
+      'END:VCALENDAR'
+    ].join('\r\n');
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `appointment-${appt.doctorName.toLowerCase().replace(/\s+/g, '-')}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    ui.showAlert('Calendar event downloaded!', 'success');
   },
 
   async handleAddAppointment(formData) {
@@ -421,25 +728,43 @@ window.app = {
 
     members.forEach((m) => {
       const card = document.createElement('div');
-      card.className = 'card';
+      card.className = 'card mb-md';
       const isSelf = m.id === auth.user.id;
       const isElder = auth.user.role === 'elder';
       const safeName = ui.escapeHtml(m.name);
       const safeRole = ui.escapeHtml(m.role);
       const safeEmail = ui.escapeHtml(m.email);
+      const initials = safeName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'M';
+
+      const roleChip = m.role === 'elder'
+        ? '<span class="chip chip-taken"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> ELDER</span>'
+        : (m.role === 'caretaker'
+          ? '<span class="chip chip-pending"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> CARETAKER</span>'
+          : '<span class="chip chip-info"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-user"/></svg> FAMILY</span>');
 
       card.innerHTML = `
-        <div class="flex-between">
-          <div>
-            <h3>${safeName} <span class="badge ${m.role === 'elder' ? 'badge-taken' : 'badge-pending'}">${safeRole.toUpperCase()}</span> ${!m.active ? '<span class="badge badge-low-stock">REVOKED</span>' : ''}</h3>
-            <p style="color:var(--text-muted);">${safeEmail}</p>
-            <div style="font-size:0.85em; margin-top:6px;">
-              Permissions: Meds: ${m.permissions.canEditMeds ? 'Edit' : 'View'} • Appts: ${m.permissions.canEditAppointments ? 'Edit' : 'View'}
+        <div class="flex-between flex-wrap gap-sm">
+          <div class="flex items-center gap-sm">
+            <div class="avatar" aria-hidden="true">${initials}</div>
+            <div>
+              <div class="flex items-center gap-xs flex-wrap mb-xs">
+                <h3 class="mb-none">${safeName}</h3>
+                ${roleChip}
+                ${!m.active ? '<span class="chip chip-missed">REVOKED</span>' : ''}
+              </div>
+              <div class="text-muted text-sm mb-xs">${safeEmail}</div>
+              <div class="flex gap-xs flex-wrap text-xs">
+                <span class="chip">Meds: ${m.permissions.canEditMeds ? 'Full Edit' : 'View Only'}</span>
+                <span class="chip">Appts: ${m.permissions.canEditAppointments ? 'Full Edit' : 'View Only'}</span>
+              </div>
             </div>
           </div>
           ${isElder && !isSelf && m.active ? `
             <div>
-              <button class="btn btn-secondary action-revoke-member" data-id="${m.id}">Revoke Access</button>
+              <button class="btn btn-secondary btn-sm action-revoke-member" data-id="${m.id}" aria-label="Revoke circle access for ${safeName}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+                <span>Revoke Access</span>
+              </button>
             </div>
           ` : ''}
         </div>
@@ -502,7 +827,7 @@ window.app = {
       listEl.innerHTML = '';
 
       if (!logs || logs.length === 0) {
-        listEl.innerHTML = '<li class="audit-item" style="color:var(--text-muted);">No activity recorded yet.</li>';
+        listEl.innerHTML = '<li class="audit-item text-muted">No activity recorded yet.</li>';
         return;
       }
 
@@ -515,7 +840,7 @@ window.app = {
         item.innerHTML = `
           <div>
             <div class="audit-summary"><strong>${safeActor}:</strong> ${safeSummary}</div>
-            <div class="audit-time">${new Date(log.timestamp).toLocaleString()} • ${safeAction}</div>
+            <div class="audit-time text-xs text-muted mt-xs">${new Date(log.timestamp).toLocaleString()} • ${safeAction}</div>
           </div>
         `;
         listEl.appendChild(item);
@@ -534,7 +859,7 @@ window.app = {
       listEl.innerHTML = '';
 
       if (!history || history.length === 0) {
-        listEl.innerHTML = '<li class="audit-item" style="color:var(--text-muted);">No reminders sent yet. Reminders are dispatched automatically based on schedules and alerts.</li>';
+        listEl.innerHTML = '<li class="audit-item text-muted">No reminders sent yet. Reminders are dispatched automatically based on schedules and alerts.</li>';
         return;
       }
 
@@ -546,7 +871,10 @@ window.app = {
         item.innerHTML = `
           <div>
             <div class="audit-summary"><strong>${safeSubject}</strong></div>
-            <div class="audit-time">Sent to ${safeEmail} at ${new Date(n.sentAt).toLocaleString()} • <span class="badge badge-taken">DELIVERED</span></div>
+            <div class="audit-time text-xs text-muted mt-xs flex items-center gap-xs flex-wrap">
+              <span>Sent to ${safeEmail} at ${new Date(n.sentAt).toLocaleString()}</span>
+              <span class="chip chip-taken"><svg class="icon icon-sm" aria-hidden="true"><use href="#icon-check"/></svg> DELIVERED</span>
+            </div>
           </div>
         `;
         listEl.appendChild(item);
@@ -581,7 +909,7 @@ window.app = {
       const insight = await api.getAdherenceInsight();
       if (insight && insight.insight) {
         textEl.textContent = `"${insight.insight}"`;
-        tipEl.textContent = insight.recommendation ? `💡 Tip: ${insight.recommendation}` : '';
+        tipEl.textContent = insight.recommendation ? `Tip: ${insight.recommendation}` : '';
         box.classList.remove('hidden');
       }
     } catch (err) {
@@ -627,7 +955,7 @@ window.app = {
       const medicines = result.medicines || [];
 
       if (medicines.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No medications could be recognized. Please check the image quality.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-md text-muted">No medications could be recognized. Please check the image quality.</td></tr>';
       } else {
         medicines.forEach((med, index) => {
           const row = document.createElement('tr');
@@ -638,10 +966,10 @@ window.app = {
           const safeTimes = ui.escapeHtml((med.suggestedTimes || ['08:00']).join(', '));
 
           row.innerHTML = `
-            <td><input type="text" class="scan-med-name" value="${safeName}" required></td>
-            <td><input type="text" class="scan-med-dosage" value="${safeDosage}" required></td>
+            <td><input type="text" class="form-control scan-med-name" value="${safeName}" required></td>
+            <td><input type="text" class="form-control scan-med-dosage" value="${safeDosage}" required></td>
             <td>
-              <select class="scan-med-form">
+              <select class="form-control scan-med-form">
                 <option value="tablet" ${med.form === 'tablet' ? 'selected' : ''}>Tablet</option>
                 <option value="capsule" ${med.form === 'capsule' ? 'selected' : ''}>Capsule</option>
                 <option value="syrup" ${med.form === 'syrup' ? 'selected' : ''}>Syrup</option>
@@ -650,10 +978,12 @@ window.app = {
                 <option value="inhaler" ${med.form === 'inhaler' ? 'selected' : ''}>Inhaler</option>
               </select>
             </td>
-            <td><input type="text" class="scan-med-times" value="${safeTimes}" required></td>
-            <td><input type="text" class="scan-med-instructions" value="${safeInstructions}"></td>
-            <td style="text-align:center;">
-              <button type="button" class="btn btn-secondary btn-sm scan-row-delete" title="Remove medication" style="color:var(--danger); font-weight:bold;">&times;</button>
+            <td><input type="text" class="form-control scan-med-times" value="${safeTimes}" required></td>
+            <td><input type="text" class="form-control scan-med-instructions" value="${safeInstructions}"></td>
+            <td class="text-center">
+              <button type="button" class="btn btn-secondary btn-icon scan-row-delete" title="Remove medication" aria-label="Remove medication">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+              </button>
             </td>
           `;
 
@@ -748,7 +1078,7 @@ window.app = {
 
       const sev = (data.severity || 'none').toLowerCase();
       if (badge) {
-        badge.className = `safety-badge ${sev}`;
+        badge.className = `chip ${sev === 'high' ? 'chip-missed' : (sev === 'moderate' ? 'chip-pending' : 'chip-taken')}`;
         badge.textContent = data.severity ? data.severity.toUpperCase() : 'NONE';
       }
 
@@ -760,23 +1090,27 @@ window.app = {
         findingsList.innerHTML = '';
         const findings = data.findings || [];
         if (findings.length === 0) {
-          findingsList.innerHTML = '<p style="color:var(--text-muted); font-size:0.95em;">No drug-drug interactions, duplicate therapies, or timing conflicts identified.</p>';
+          findingsList.innerHTML = '<p class="text-muted text-sm">No drug-drug interactions, duplicate therapies, or timing conflicts identified.</p>';
         } else {
           findings.forEach((f) => {
             const item = document.createElement('div');
-            item.className = 'safety-finding-item';
+            item.className = 'safety-finding-item mb-sm';
             const safeMeds = ui.escapeHtml((f.medications || []).join(' + '));
             const safeSeverity = ui.escapeHtml((f.severity || 'info').toUpperCase());
             const safeDesc = ui.escapeHtml(f.description);
             const safeRec = ui.escapeHtml(f.recommendation || 'Consult your doctor.');
+            const sevClass = (f.severity || 'low').toLowerCase() === 'high' ? 'chip-missed' : 'chip-pending';
 
             item.innerHTML = `
-              <div style="font-weight:700; margin-bottom:4px; display:flex; justify-content:space-between;">
-                <span>💊 ${safeMeds}</span>
-                <span class="safety-badge ${(f.severity || 'low').toLowerCase()}">${safeSeverity}</span>
+              <div class="flex-between mb-xs">
+                <span class="text-bold flex items-center gap-xs">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-pill"/></svg>
+                  <span>${safeMeds}</span>
+                </span>
+                <span class="chip ${sevClass}">${safeSeverity}</span>
               </div>
-              <p style="margin-bottom:6px; font-size:0.95em;">${safeDesc}</p>
-              <div style="font-size:0.88em; color:var(--text-muted);"><strong>Recommendation:</strong> ${safeRec}</div>
+              <p class="text-sm mb-xs">${safeDesc}</p>
+              <div class="text-xs text-muted"><strong>Recommendation:</strong> ${safeRec}</div>
             `;
             findingsList.appendChild(item);
           });
@@ -842,11 +1176,20 @@ window.app = {
     }
 
     card.innerHTML = `
-      <div class="ai-action-card-title">⚠️ ${actionTitle}</div>
-      <div class="ai-action-card-body">${actionDesc}</div>
+      <div class="ai-action-card-title flex items-center gap-xs">
+        <svg class="icon icon-sm text-accent" aria-hidden="true"><use href="#icon-alert"/></svg>
+        <span>${actionTitle}</span>
+      </div>
+      <div class="ai-action-card-body mb-sm">${actionDesc}</div>
       <div class="ai-action-buttons">
-        <button type="button" class="ai-btn-confirm">✅ Confirm</button>
-        <button type="button" class="ai-btn-cancel">❌ Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm ai-btn-confirm">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-check"/></svg>
+          <span>Confirm</span>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm ai-btn-cancel">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-x"/></svg>
+          <span>Cancel</span>
+        </button>
       </div>
     `;
 
@@ -894,7 +1237,7 @@ window.app = {
       }
     } catch (err) {
       thinkingBubble.remove();
-      this.appendChatBubble('assistant', `⚠️ ${err.message || 'Could not process query'}`);
+      this.appendChatBubble('assistant', `Error: ${err.message || 'Could not process query'}`);
     }
   },
 
