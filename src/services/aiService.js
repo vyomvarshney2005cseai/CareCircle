@@ -8,6 +8,25 @@ const AppError = require('../errors/appError');
 const { ROLES } = require('../constants/roles');
 
 /**
+ * Whether the caller may log doses (elder, or a member with medication access).
+ * @param {object} actorUser
+ * @returns {boolean}
+ */
+function canLogDoses(actorUser) {
+  const perms = actorUser.permissions || {};
+  return actorUser.role === ROLES.ELDER || Boolean(perms.canEditMeds || perms.canViewMeds);
+}
+
+/**
+ * Whether the caller may create appointments.
+ * @param {object} actorUser
+ * @returns {boolean}
+ */
+function canEditAppointments(actorUser) {
+  return actorUser.role === ROLES.ELDER || Boolean(actorUser.permissions?.canEditAppointments);
+}
+
+/**
  * Find the pending dose that best matches a spoken medicine name,
  * falling back to the next pending dose of the day.
  * @param {object} todaySchedule Schedule with a `doses` array.
@@ -197,11 +216,7 @@ class AIService {
    */
   _intentMarkTaken({ actorUser, intent, todaySchedule }) {
     // Check permission
-    if (
-      actorUser.role !== ROLES.ELDER &&
-      !actorUser.permissions?.canEditMeds &&
-      !actorUser.permissions?.canViewMeds
-    ) {
+    if (!canLogDoses(actorUser)) {
       return {
         action: 'permission_denied',
         reply: 'You do not have permission to log medication doses for this circle.',
@@ -235,7 +250,7 @@ class AIService {
    */
   _intentAddAppointment({ actorUser, intent }) {
     // Check permission
-    if (actorUser.role !== ROLES.ELDER && !actorUser.permissions?.canEditAppointments) {
+    if (!canEditAppointments(actorUser)) {
       return {
         action: 'permission_denied',
         reply: 'You do not have permission to schedule appointments for this circle.',
@@ -338,70 +353,79 @@ class AIService {
    */
   async _executeConfirmedAction(profileId, actorUser, confirmationData) {
     const { action } = confirmationData;
-
     if (action === 'mark_taken') {
-      if (
-        actorUser.role !== ROLES.ELDER &&
-        !actorUser.permissions?.canEditMeds &&
-        !actorUser.permissions?.canViewMeds
-      ) {
-        throw AppError.forbidden('Missing permission to record medication dose');
-      }
-
-      let doseId = confirmationData.doseId;
-      if (!doseId) {
-        // Resolve today's dose
-        const todaySchedule = await scheduleService.getScheduleForDate(profileId);
-        const requestedMedName = (confirmationData.medicationName || '').toLowerCase();
-        const pendingDose = (todaySchedule.doses || []).find(
-          (d) => d.status !== 'taken' && d.medicationName.toLowerCase().includes(requestedMedName)
-        );
-        if (pendingDose) {
-          doseId = pendingDose.id;
-        }
-      }
-
-      if (!doseId) {
-        return {
-          success: false,
-          reply: `Could not locate a pending dose for ${confirmationData.medicationName || 'medication'} today. It may have already been recorded.`
-        };
-      }
-
-      await scheduleService.recordDoseAction(profileId, actorUser, doseId, {
-        status: 'taken',
-        takenAt: new Date().toISOString()
-      });
-
-      return {
-        success: true,
-        action: 'mark_taken',
-        reply: `✅ Successfully marked ${confirmationData.medicationName} as taken!`
-      };
+      return this._confirmMarkTaken(profileId, actorUser, confirmationData);
     }
-
     if (action === 'add_appointment') {
-      if (actorUser.role !== ROLES.ELDER && !actorUser.permissions?.canEditAppointments) {
-        throw AppError.forbidden('Missing permission to create appointment');
+      return this._confirmAddAppointment(profileId, actorUser, confirmationData);
+    }
+    throw AppError.badRequest(`Unknown confirmation action: ${action}`);
+  }
+
+  /**
+   * Record a confirmed "I took it" dose through the schedule service.
+   * @private
+   */
+  async _confirmMarkTaken(profileId, actorUser, confirmationData) {
+    if (!canLogDoses(actorUser)) {
+      throw AppError.forbidden('Missing permission to record medication dose');
+    }
+
+    let doseId = confirmationData.doseId;
+    if (!doseId) {
+      // Resolve today's dose
+      const todaySchedule = await scheduleService.getScheduleForDate(profileId);
+      const requestedMedName = (confirmationData.medicationName || '').toLowerCase();
+      const pendingDose = (todaySchedule.doses || []).find(
+        (d) => d.status !== 'taken' && d.medicationName.toLowerCase().includes(requestedMedName)
+      );
+      if (pendingDose) {
+        doseId = pendingDose.id;
       }
+    }
 
-      const created = await appointmentService.createAppointment(profileId, actorUser, {
-        doctorName: confirmationData.doctorName,
-        specialty: confirmationData.specialty,
-        location: confirmationData.location,
-        dateTime: confirmationData.dateTime,
-        notes: confirmationData.notes || 'Created via AI Assistant'
-      });
-
+    if (!doseId) {
       return {
-        success: true,
-        action: 'add_appointment',
-        reply: `✅ Appointment with Dr. ${confirmationData.doctorName} on ${confirmationData.dateTime} has been scheduled!`,
-        data: created
+        success: false,
+        reply: `Could not locate a pending dose for ${confirmationData.medicationName || 'medication'} today. It may have already been recorded.`
       };
     }
 
-    throw AppError.badRequest(`Unknown confirmation action: ${action}`);
+    await scheduleService.recordDoseAction(profileId, actorUser, doseId, {
+      status: 'taken',
+      takenAt: new Date().toISOString()
+    });
+
+    return {
+      success: true,
+      action: 'mark_taken',
+      reply: `✅ Successfully marked ${confirmationData.medicationName} as taken!`
+    };
+  }
+
+  /**
+   * Create a confirmed appointment through the appointment service.
+   * @private
+   */
+  async _confirmAddAppointment(profileId, actorUser, confirmationData) {
+    if (!canEditAppointments(actorUser)) {
+      throw AppError.forbidden('Missing permission to create appointment');
+    }
+
+    const created = await appointmentService.createAppointment(profileId, actorUser, {
+      doctorName: confirmationData.doctorName,
+      specialty: confirmationData.specialty,
+      location: confirmationData.location,
+      dateTime: confirmationData.dateTime,
+      notes: confirmationData.notes || 'Created via AI Assistant'
+    });
+
+    return {
+      success: true,
+      action: 'add_appointment',
+      reply: `✅ Appointment with Dr. ${confirmationData.doctorName} on ${confirmationData.dateTime} has been scheduled!`,
+      data: created
+    };
   }
 }
 

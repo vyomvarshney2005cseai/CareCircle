@@ -5,6 +5,32 @@ const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5MB
 const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 /**
+ * Known file signatures ("magic bytes") per allowed MIME type.
+ * WebP needs both the RIFF container header and the WEBP chunk tag.
+ */
+const MAGIC_SIGNATURES = new Map([
+  ['image/jpeg', [{ offset: 0, bytes: [0xff, 0xd8, 0xff] }]],
+  ['image/png', [{ offset: 0, bytes: [0x89, 0x50, 0x4e, 0x47] }]],
+  [
+    'image/webp',
+    [
+      { offset: 0, bytes: [0x52, 0x49, 0x46, 0x46] },
+      { offset: 8, bytes: [0x57, 0x45, 0x42, 0x50] }
+    ]
+  ]
+]);
+
+/**
+ * Check whether a buffer contains the given byte sequence at an offset.
+ * @param {Buffer} buffer
+ * @param {{offset: number, bytes: number[]}} signature
+ * @returns {boolean}
+ */
+function matchesSignature(buffer, { offset, bytes }) {
+  return bytes.every((byte, i) => buffer[offset + i] === byte);
+}
+
+/**
  * Validate image buffer header against known magic bytes.
  * @param {Buffer} buffer
  * @param {string} mimeType
@@ -12,27 +38,8 @@ const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
  */
 function validateMagicBytes(buffer, mimeType) {
   if (!buffer || buffer.length < 12) return false;
-
-  // JPEG: FF D8 FF
-  if (mimeType === 'image/jpeg') {
-    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
-  }
-
-  // PNG: 89 50 4E 47
-  if (mimeType === 'image/png') {
-    return buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
-  }
-
-  // WebP: RIFF (bytes 0-3) and WEBP (bytes 8-11)
-  if (mimeType === 'image/webp') {
-    const isRiff =
-      buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46;
-    const isWebp =
-      buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
-    return isRiff && isWebp;
-  }
-
-  return false;
+  const signatures = MAGIC_SIGNATURES.get(mimeType);
+  return Boolean(signatures) && signatures.every((sig) => matchesSignature(buffer, sig));
 }
 
 /**
