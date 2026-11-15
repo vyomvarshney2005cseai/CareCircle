@@ -131,6 +131,7 @@ a:hover, a:focus {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  padding-bottom: 120px;
 }
 
 @media (min-width: 1024px) {
@@ -152,6 +153,7 @@ a:hover, a:focus {
   .app-main-column {
     padding-left: 20px;
     padding-right: 20px;
+    padding-bottom: 40px;
     max-width: calc(100% - 280px);
   }
 }

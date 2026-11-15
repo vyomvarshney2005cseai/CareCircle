@@ -610,12 +610,46 @@ textarea.form-control {
 /* 10. Alert Banners & Toasts */
 #toast-notification {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  bottom: 24px;
+  left: 24px;
   z-index: 99999;
   max-width: 480px;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.28);
   animation: modalSlideUp 0.2s ease-out;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+@media (max-width: 1023px) {
+  #toast-notification {
+    bottom: 92px;
+    left: 16px;
+    right: 16px;
+    max-width: calc(100% - 32px);
+  }
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  margin-left: 12px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+}
+
+.toast-close-btn:hover, .toast-close-btn:focus-visible {
+  color: var(--ink);
+  outline: 2px solid var(--primary);
 }
 
 .alert-banner {
@@ -700,4 +734,173 @@ textarea.form-control {
   width: 100%;
   height: auto;
   display: block;
+}
+
+/* 13. Form Input Buttons & Password Visibility */
+.input-with-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-button .form-control {
+  padding-right: 48px;
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.btn-toggle-pw:hover, .btn-toggle-pw:focus-visible {
+  color: var(--ink);
+  background: var(--surface-subtle);
+  outline: 2px solid var(--primary);
+}
+
+.btn-copy-tag {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 6px;
+  min-width: 36px;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}
+
+.btn-copy-tag:hover, .btn-copy-tag:focus-visible {
+  color: var(--primary);
+  background: var(--surface-subtle);
+  outline: 2px solid var(--primary);
+}
+
+.required-indicator {
+  color: #B3261E;
+  font-weight: 800;
+  margin-left: 3px;
+}
+
+.optional-indicator {
+  color: var(--text-muted);
+  font-size: 0.85em;
+  font-weight: normal;
+  margin-left: 4px;
+}
+
+.field-error-message {
+  color: #B3261E;
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-top: 6px;
+}
+
+.times-chips-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.time-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: 0.9em;
+  color: var(--ink);
+}
+
+.time-chip-remove {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: 1.1em;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.time-chip-remove:hover, .time-chip-remove:focus-visible {
+  color: #B3261E;
+  outline: 2px solid #B3261E;
+}
+
+/* 14. Accessible Adherence Table */
+.chart-table-details {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+
+.chart-table-summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--primary);
+  padding: 6px 0;
+}
+
+.chart-table-summary:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: var(--radius-sm);
+}
+
+.adherence-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.adherence-data-table th, .adherence-data-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  text-align: left;
+}
+
+.adherence-data-table th {
+  background: var(--surface-subtle);
+  font-weight: 700;
+}
+
+/* 15. Landing Page Pillars */
+.how-carecircle-helps {
+  background: var(--surface-subtle);
+  padding: 18px 20px;
+  border-radius: var(--radius-md);
+  border-left: 4px solid var(--primary);
+}
+
+.how-helps-list {
+  list-style: disc;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.95em;
+  line-height: 1.5;
+  color: var(--ink);
 }

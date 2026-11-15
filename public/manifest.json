@@ -1,0 +1,16 @@
+{
+  "name": "CareCircle - Elder Care & Medication Platform",
+  "short_name": "CareCircle",
+  "description": "Accessible, collaborative elderly medication and healthcare routine management with WCAG 2.1 AA senior design.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFF8F1",
+  "theme_color": "#1F7A5C",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

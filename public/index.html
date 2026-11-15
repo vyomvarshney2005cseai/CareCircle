@@ -6,7 +6,9 @@
   <meta name="description" content="CareCircle is an accessible, collaborative elderly medication and healthcare routine platform designed with WCAG 2.1 AA senior accessibility standards.">
   <meta name="theme-color" content="#1F7A5C">
   <title>CareCircle - Collaborative Elderly Care & Medication Management</title>
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='48' fill='%231F7A5C'/><circle cx='50' cy='50' r='26' fill='%23FFF8F1'/><circle cx='50' cy='50' r='14' fill='%23FFC94A'/></svg>">
+  <link rel="manifest" href="/manifest.json">
 
   <!-- Google Fonts: Fraunces (serif headings) & Nunito (rounded sans UI) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,6 +120,12 @@
       <symbol id="icon-eye" viewBox="0 0 24 24">
         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
         <circle cx="12" cy="12" r="3"/>
+      </symbol>
+
+      <!-- Eye Off -->
+      <symbol id="icon-eye-off" viewBox="0 0 24 24">
+        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </symbol>
 
       <!-- Map Pin -->
@@ -247,7 +255,10 @@
   </aside>
 
   <!-- Global Toast Alerts -->
-  <div id="toast-notification" class="alert-banner alert-info hidden" role="status" aria-live="polite"></div>
+  <div id="toast-notification" class="alert-banner alert-info hidden" role="status" aria-live="polite">
+    <span id="toast-text"></span>
+    <button type="button" id="btn-toast-close" class="toast-close-btn" aria-label="Close notification">&times;</button>
+  </div>
 
   <!-- ========================================================================
        AUTH VIEW (When user is not logged in)
@@ -256,7 +267,7 @@
     <div class="card text-center">
       <!-- Warm Original Illustration (Care & Connection) -->
       <div class="welcome-hero">
-        <svg class="welcome-illustration" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <svg class="welcome-illustration" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="CareCircle: Compassionate family and elder healthcare">
           <circle cx="70" cy="70" r="66" fill="#FDF3E7" stroke="#1F7A5C" stroke-width="2" stroke-dasharray="4 4"/>
           <circle cx="70" cy="50" r="22" fill="#E3F4EC" stroke="#1F7A5C" stroke-width="2.5"/>
           <circle cx="70" cy="45" r="9" fill="#1F7A5C"/>
@@ -276,7 +287,7 @@
         </p>
 
         <!-- 3 Reassurance Trust Chips -->
-        <div class="trust-chips-row">
+        <div class="trust-chips-row mb-md">
           <span class="trust-chip">
             <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-shield"/></svg>
             <span>Private passcode access</span>
@@ -290,28 +301,49 @@
             <span>You stay in control</span>
           </span>
         </div>
+
+        <!-- How CareCircle Helps (Senior-Centred 3 Pillars) -->
+        <div class="how-carecircle-helps mb-lg text-left">
+          <h2 class="text-serif text-md mb-xs text-primary">How CareCircle helps you & your family:</h2>
+          <ul class="how-helps-list">
+            <li>
+              <strong>Senior at the centre:</strong> The elder retains full authority and approves or rejects any routine changes proposed by caretakers.
+            </li>
+            <li>
+              <strong>Accessible & dignified:</strong> Senior-first design with 20px+ scalable text, high-contrast mode, large 48px touch targets, and voice reading.
+            </li>
+            <li>
+              <strong>Proactive & collaborative:</strong> Automated, respectful reminders for upcoming doses, missed medications, and doctor visits keep everyone connected.
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <!-- Auth Switcher Buttons -->
+      <!-- Auth Switcher Buttons (WAI-ARIA Tablist Pattern) -->
       <div class="auth-tabs-row" role="tablist" aria-label="Authentication Options">
-        <button id="tab-btn-login" class="btn btn-primary flex-1" type="button" role="tab" aria-selected="true" aria-controls="form-login">Log In</button>
-        <button id="tab-btn-join" class="btn btn-secondary flex-1" type="button" role="tab" aria-selected="false" aria-controls="form-join">Join Circle</button>
-        <button id="tab-btn-register" class="btn btn-secondary flex-1" type="button" role="tab" aria-selected="false" aria-controls="form-register">New Elder</button>
+        <button id="tab-btn-login" class="btn btn-primary flex-1" type="button" role="tab" aria-selected="true" tabindex="0" aria-controls="form-login">Log In</button>
+        <button id="tab-btn-join" class="btn btn-secondary flex-1" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="form-join">Join Circle</button>
+        <button id="tab-btn-register" class="btn btn-secondary flex-1" type="button" role="tab" aria-selected="false" tabindex="-1" aria-controls="form-register">New Elder</button>
       </div>
 
       <!-- 1. Login Form -->
-      <form id="form-login" role="tabpanel" aria-labelledby="tab-btn-login">
-        <div class="form-group">
-          <label class="form-label" for="login-profile-id">CareCircle Profile ID</label>
-          <input id="login-profile-id" class="form-control" type="text" placeholder="e.g. 550e8400-e29b-..." required autocomplete="username">
+      <form id="form-login" role="tabpanel" aria-labelledby="tab-btn-login" tabindex="0">
+        <div class="form-group text-left">
+          <label class="form-label" for="login-profile-id">CareCircle Profile ID <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="login-profile-id" class="form-control" type="text" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" required aria-required="true" autocomplete="username">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="login-email">Your Email Address</label>
-          <input id="login-email" class="form-control" type="email" placeholder="name@domain.com" required autocomplete="email">
+        <div class="form-group text-left">
+          <label class="form-label" for="login-email">Your Email Address <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="login-email" class="form-control" type="email" placeholder="name@domain.com" required aria-required="true" autocomplete="email">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="login-passcode">Personal Passcode</label>
-          <input id="login-passcode" class="form-control" type="password" placeholder="Passcode (6+ chars)" required autocomplete="current-password">
+        <div class="form-group text-left">
+          <label class="form-label" for="login-passcode">Personal Passcode <span class="required-indicator" aria-hidden="true">*</span></label>
+          <div class="input-with-button">
+            <input id="login-passcode" class="form-control" type="password" placeholder="Passcode (6+ chars)" required aria-required="true" autocomplete="current-password">
+            <button type="button" class="btn-toggle-pw" data-target="login-passcode" aria-label="Show password" title="Show password">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-eye"/></svg>
+            </button>
+          </div>
         </div>
         <button class="btn btn-cta btn-lg w-full mt-sm" type="submit">
           <svg class="icon" aria-hidden="true"><use href="#icon-check"/></svg>
@@ -320,26 +352,31 @@
       </form>
 
       <!-- 2. Join via Invite Form -->
-      <form id="form-join" class="hidden" role="tabpanel" aria-labelledby="tab-btn-join">
-        <div class="form-group">
-          <label class="form-label" for="join-profile-id">CareCircle Profile ID</label>
-          <input id="join-profile-id" class="form-control" type="text" placeholder="Provided by the elder" required>
+      <form id="form-join" class="hidden" role="tabpanel" aria-labelledby="tab-btn-join" tabindex="0">
+        <div class="form-group text-left">
+          <label class="form-label" for="join-profile-id">CareCircle Profile ID <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="join-profile-id" class="form-control" type="text" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" required aria-required="true" autocomplete="username">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="join-invite-code">8-Character Invite Code</label>
-          <input id="join-invite-code" class="form-control text-bold invite-code-input" type="text" placeholder="e.g. 8K4N9X2M" required>
+        <div class="form-group text-left">
+          <label class="form-label" for="join-invite-code">8-Character Invite Code <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="join-invite-code" class="form-control text-bold invite-code-input" type="text" placeholder="e.g. 8K4N9X2M" required aria-required="true">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="join-name">Your Full Name</label>
-          <input id="join-name" class="form-control" type="text" placeholder="Nurse Joy / Bob" required autocomplete="name">
+        <div class="form-group text-left">
+          <label class="form-label" for="join-name">Your Full Name <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="join-name" class="form-control" type="text" placeholder="Nurse Joy / Bob" required aria-required="true" autocomplete="name">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="join-email">Your Email</label>
-          <input id="join-email" class="form-control" type="email" placeholder="nurse@example.com" required autocomplete="email">
+        <div class="form-group text-left">
+          <label class="form-label" for="join-email">Your Email <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="join-email" class="form-control" type="email" placeholder="nurse@example.com" required aria-required="true" autocomplete="email">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="join-passcode">Set Your Personal Passcode (6+ chars)</label>
-          <input id="join-passcode" class="form-control" type="password" placeholder="Set a secure passcode" minlength="6" required autocomplete="new-password">
+        <div class="form-group text-left">
+          <label class="form-label" for="join-passcode">Set Your Personal Passcode (6+ chars) <span class="required-indicator" aria-hidden="true">*</span></label>
+          <div class="input-with-button">
+            <input id="join-passcode" class="form-control" type="password" placeholder="Set a secure passcode" minlength="6" required aria-required="true" autocomplete="new-password">
+            <button type="button" class="btn-toggle-pw" data-target="join-passcode" aria-label="Show password" title="Show password">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-eye"/></svg>
+            </button>
+          </div>
         </div>
         <button class="btn btn-primary btn-lg w-full mt-sm" type="submit">
           <svg class="icon" aria-hidden="true"><use href="#icon-users"/></svg>
@@ -348,18 +385,23 @@
       </form>
 
       <!-- 3. Register Elder Form -->
-      <form id="form-register" class="hidden" role="tabpanel" aria-labelledby="tab-btn-register">
-        <div class="form-group">
-          <label class="form-label" for="reg-elder-name">Elder's Full Name</label>
-          <input id="reg-elder-name" class="form-control" type="text" placeholder="e.g. Martha Smith" required autocomplete="name">
+      <form id="form-register" class="hidden" role="tabpanel" aria-labelledby="tab-btn-register" tabindex="0">
+        <div class="form-group text-left">
+          <label class="form-label" for="reg-elder-name">Elder's Full Name <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="reg-elder-name" class="form-control" type="text" placeholder="e.g. Martha Smith" required aria-required="true" autocomplete="name">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="reg-elder-email">Elder's Email</label>
-          <input id="reg-elder-email" class="form-control" type="email" placeholder="martha@example.com" required autocomplete="email">
+        <div class="form-group text-left">
+          <label class="form-label" for="reg-elder-email">Elder's Email <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="reg-elder-email" class="form-control" type="email" placeholder="martha@example.com" required aria-required="true" autocomplete="email">
         </div>
-        <div class="form-group">
-          <label class="form-label" for="reg-passcode">Elder Passcode (6+ chars)</label>
-          <input id="reg-passcode" class="form-control" type="password" placeholder="Passcode (6+ chars)" minlength="6" required autocomplete="new-password">
+        <div class="form-group text-left">
+          <label class="form-label" for="reg-passcode">Elder Passcode (6+ chars) <span class="required-indicator" aria-hidden="true">*</span></label>
+          <div class="input-with-button">
+            <input id="reg-passcode" class="form-control" type="password" placeholder="Passcode (6+ chars)" minlength="6" required aria-required="true" autocomplete="new-password">
+            <button type="button" class="btn-toggle-pw" data-target="reg-passcode" aria-label="Show password" title="Show password">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-eye"/></svg>
+            </button>
+          </div>
         </div>
         <button class="btn btn-cta btn-lg w-full mt-sm" type="submit">
           <svg class="icon" aria-hidden="true"><use href="#icon-plus"/></svg>
@@ -446,7 +488,13 @@
           <div class="avatar" id="header-avatar" aria-hidden="true">CC</div>
           <div>
             <h1 class="brand-title"><span id="header-elder-name">Elder</span>'s Circle</h1>
-            <div class="brand-tagline">ID: <span id="header-profile-id">Loading...</span></div>
+            <div class="brand-tagline">
+              <span id="header-profile-id">Circle ID: Loading...</span>
+              <button id="btn-copy-circle-id" class="btn-copy-tag" type="button" aria-label="Copy CareCircle ID" title="Copy CareCircle ID">
+                <svg class="icon icon-xs" aria-hidden="true"><use href="#icon-copy"/></svg>
+                <span class="sr-only">Copy</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="header-user-section">
@@ -748,6 +796,28 @@
                 <text x="530" y="202" fill="#6B7280" font-size="12">Sun</text>
               </svg>
             </div>
+            <!-- Accessible Data Table Alternative for Screen Readers -->
+            <details class="chart-table-details mt-sm">
+              <summary class="chart-table-summary">View adherence data as a table (accessible for screen readers)</summary>
+              <div class="table-container mt-xs">
+                <table class="adherence-data-table" id="adherence-table-alternative">
+                  <caption class="sr-only">Medication Adherence Breakdown</caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">Timeframe</th>
+                      <th scope="col">Scheduled Doses</th>
+                      <th scope="col">Taken</th>
+                      <th scope="col">Adherence %</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adherence-table-body">
+                    <tr><td>Today</td><td id="adherence-table-today-total">--</td><td id="adherence-table-today-taken">--</td><td id="adherence-table-today-pct">--%</td></tr>
+                    <tr><td>Past 7 Days</td><td id="adherence-table-7d-total">--</td><td id="adherence-table-7d-taken">--</td><td id="adherence-table-7d-pct">--%</td></tr>
+                    <tr><td>Past 30 Days</td><td id="adherence-table-30d-total">--</td><td id="adherence-table-30d-taken">--</td><td id="adherence-table-30d-pct">--%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
           </div>
         </section>
 
@@ -793,59 +863,97 @@
 
       </main>
     </div>
-  </div>
 
-  <!-- ========================================================================
-       MOBILE BOTTOM NAVIGATION BAR (Phone <= 1023px)
-       Exactly 4 tabs (Today, Medicines, Calendar, Circle) + "More" tab
-       ======================================================================== -->
-  <nav class="mobile-bottom-bar" aria-label="Mobile Navigation">
-    <button class="mobile-nav-btn nav-tab active" data-tab="today" id="tab-btn-today-m" type="button" aria-label="Today's Schedule">
-      <svg class="icon" aria-hidden="true"><use href="#icon-calendar"/></svg>
-      <span>Today</span>
-    </button>
-    <button class="mobile-nav-btn nav-tab" data-tab="meds" id="tab-btn-meds-m" type="button" aria-label="Medications">
-      <svg class="icon" aria-hidden="true"><use href="#icon-pill"/></svg>
-      <span>Medicines</span>
-    </button>
-    <button class="mobile-nav-btn nav-tab" data-tab="appointments" id="tab-btn-appointments-m" type="button" aria-label="Appointments Calendar">
-      <svg class="icon" aria-hidden="true"><use href="#icon-stethoscope"/></svg>
-      <span>Calendar</span>
-    </button>
-    <button class="mobile-nav-btn nav-tab" data-tab="family" id="tab-btn-family-m" type="button" aria-label="Family and Care Circle">
-      <svg class="icon" aria-hidden="true"><use href="#icon-users"/></svg>
-      <span>Circle</span>
-    </button>
-    <button class="mobile-nav-btn" id="tab-btn-more-m" type="button" aria-label="More Options and Settings">
-      <svg class="icon" aria-hidden="true"><use href="#icon-more"/></svg>
-      <span>More</span>
-    </button>
-  </nav>
+    <!-- ========================================================================
+         MOBILE BOTTOM NAVIGATION BAR (Phone <= 1023px)
+         Exactly 4 tabs (Today, Medicines, Calendar, Circle) + "More" tab
+         Strictly rendered only inside #app-view when user is logged in
+         ======================================================================== -->
+    <nav class="mobile-bottom-bar" aria-label="Mobile Navigation">
+      <button class="mobile-nav-btn nav-tab active" data-tab="today" id="tab-btn-today-m" type="button" aria-label="Today's Schedule">
+        <svg class="icon" aria-hidden="true"><use href="#icon-calendar"/></svg>
+        <span>Today</span>
+      </button>
+      <button class="mobile-nav-btn nav-tab" data-tab="meds" id="tab-btn-meds-m" type="button" aria-label="Medications">
+        <svg class="icon" aria-hidden="true"><use href="#icon-pill"/></svg>
+        <span>Medicines</span>
+      </button>
+      <button class="mobile-nav-btn nav-tab" data-tab="appointments" id="tab-btn-appointments-m" type="button" aria-label="Appointments Calendar">
+        <svg class="icon" aria-hidden="true"><use href="#icon-stethoscope"/></svg>
+        <span>Calendar</span>
+      </button>
+      <button class="mobile-nav-btn nav-tab" data-tab="family" id="tab-btn-family-m" type="button" aria-label="Family and Care Circle">
+        <svg class="icon" aria-hidden="true"><use href="#icon-users"/></svg>
+        <span>Circle</span>
+      </button>
+      <button class="mobile-nav-btn" id="tab-btn-more-m" type="button" aria-label="More Options and Settings">
+        <svg class="icon" aria-hidden="true"><use href="#icon-more"/></svg>
+        <span>More</span>
+      </button>
+    </nav>
 
-  <!-- ========================================================================
-       BOTTOM SHEET: "MORE" MENU FOR MOBILE
-       ======================================================================== -->
-  <div id="sheet-more" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sheet-more-title" hidden>
-    <div class="modal-card bottom-sheet-card">
-      <div class="modal-header">
-        <h3 id="sheet-more-title">More Features & Settings</h3>
-        <button class="close-btn" data-close="sheet-more" type="button" aria-label="Close more options">&times;</button>
-      </div>
-      <div class="flex-col gap-sm">
-        <button class="sidebar-nav-link nav-tab" data-tab="health" type="button">
-          <svg class="icon" aria-hidden="true"><use href="#icon-heart"/></svg>
-          <span>Health & Adherence Trends</span>
-        </button>
-        <button class="sidebar-nav-link nav-tab" data-tab="notifications" type="button">
-          <svg class="icon" aria-hidden="true"><use href="#icon-bell"/></svg>
-          <span>Reminders & Alerts</span>
-        </button>
-        <button class="sidebar-nav-link nav-tab" data-tab="audit" type="button">
-          <svg class="icon" aria-hidden="true"><use href="#icon-clock"/></svg>
-          <span>Activity Log Trail</span>
-        </button>
+    <!-- ========================================================================
+         BOTTOM SHEET: "MORE" MENU FOR MOBILE
+         ======================================================================== -->
+    <div id="sheet-more" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="sheet-more-title" hidden>
+      <div class="modal-card bottom-sheet-card">
+        <div class="modal-header">
+          <h3 id="sheet-more-title">More Features & Settings</h3>
+          <button class="close-btn" data-close="sheet-more" type="button" aria-label="Close more options">&times;</button>
+        </div>
+        <div class="flex-col gap-sm">
+          <button class="sidebar-nav-link nav-tab" data-tab="health" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#icon-heart"/></svg>
+            <span>Health & Adherence Trends</span>
+          </button>
+          <button class="sidebar-nav-link nav-tab" data-tab="notifications" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#icon-bell"/></svg>
+            <span>Reminders & Alerts</span>
+          </button>
+          <button class="sidebar-nav-link nav-tab" data-tab="audit" type="button">
+            <svg class="icon" aria-hidden="true"><use href="#icon-clock"/></svg>
+            <span>Activity Log Trail</span>
+          </button>
+        </div>
       </div>
     </div>
+
+    <!-- ========================================================================
+         FLOATING CONVERSATIONAL AI VOICE & TEXT ASSISTANT DOCK
+         Strictly rendered only inside #app-view when user is logged in
+         ======================================================================== -->
+    <div class="ai-chat-dock" role="region" aria-label="CareCircle Voice and AI Assistant">
+      <button id="btn-toggle-ai-chat" class="ai-chat-toggle-btn" type="button" aria-expanded="false" aria-controls="ai-chat-panel">
+        <svg class="icon" aria-hidden="true"><use href="#icon-chat"/></svg>
+        <span>Assistant</span>
+      </button>
+      <div id="ai-chat-panel" class="ai-chat-panel hidden" role="dialog" aria-label="Conversational AI Assistant" hidden>
+        <div class="ai-chat-header">
+          <div class="flex items-center gap-xs">
+            <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
+            <span>CareCircle Assistant</span>
+          </div>
+          <button id="btn-close-ai-chat" type="button" aria-label="Close Assistant">&times;</button>
+        </div>
+        <div id="ai-chat-messages" class="ai-chat-messages" role="log" aria-live="polite">
+          <div class="ai-bubble assistant">
+            Hello! I am your CareCircle Voice & AI Assistant. You can speak or type:
+            <br>• "What's due today?"
+            <br>• "I took my morning medicine"
+            <br>• "Schedule appointment with Dr. Sharma next Tuesday 5pm"
+            <br>• "How was my week?"
+          </div>
+        </div>
+        <form id="ai-chat-form" class="ai-chat-input-bar">
+          <button id="ai-mic-btn" class="ai-mic-btn" type="button" aria-label="Speak using microphone" title="Speak to assistant">
+            <svg class="icon" aria-hidden="true"><use href="#icon-mic"/></svg>
+          </button>
+          <input id="ai-chat-input" class="form-control" type="text" placeholder="Speak or type a message..." autocomplete="off" aria-label="Ask assistant">
+          <button type="submit" class="ai-send-btn" aria-label="Send message">Send</button>
+        </form>
+      </div>
+    </div>
+
   </div>
 
   <!-- ========================================================================
@@ -860,16 +968,16 @@
       <form id="form-add-med">
         <div id="modal-add-med-error" class="alert-banner alert-warning hidden mb-sm" role="alert"></div>
         <div class="form-group">
-          <label class="form-label" for="med-name">Medication Name</label>
-          <input id="med-name" class="form-control" type="text" placeholder="e.g. Metformin" required>
+          <label class="form-label" for="med-name">Medication Name <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="med-name" class="form-control" type="text" placeholder="e.g. Metformin" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="med-dosage">Dosage Strength</label>
-          <input id="med-dosage" class="form-control" type="text" placeholder="e.g. 500mg, 1 tablet" required>
+          <label class="form-label" for="med-dosage">Dosage Strength <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="med-dosage" class="form-control" type="text" placeholder="e.g. 500mg, 1 tablet" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="med-form">Form</label>
-          <select id="med-form" class="form-control" required>
+          <label class="form-label" for="med-form">Form <span class="required-indicator" aria-hidden="true">*</span></label>
+          <select id="med-form" class="form-control" required aria-required="true">
             <option value="tablet">Tablet</option>
             <option value="capsule">Capsule</option>
             <option value="syrup">Syrup / Liquid</option>
@@ -879,15 +987,25 @@
           </select>
         </div>
         <div class="form-group">
-          <label class="form-label" for="med-instructions">Routine Instructions</label>
-          <input id="med-instructions" class="form-control" type="text" placeholder="e.g. Take with water after meals" required>
+          <label class="form-label" for="med-instructions">Routine Instructions <span class="optional-indicator">(optional)</span></label>
+          <input id="med-instructions" class="form-control" type="text" placeholder="e.g. Take with water after meals">
         </div>
         <div class="form-group">
-          <label class="form-label" for="med-times">Times (comma separated, HH:mm)</label>
-          <input id="med-times" class="form-control" type="text" placeholder="08:00, 20:00" required>
+          <label class="form-label" for="med-times">Times <span class="required-indicator" aria-hidden="true">*</span></label>
+          <div class="time-builder-row flex gap-xs items-center mb-xs">
+            <input id="med-time-picker" class="form-control flex-1" type="time" aria-label="Select dose time picker">
+            <button type="button" id="btn-add-time-chip" class="btn btn-secondary">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-plus"/></svg>
+              <span>+ Add Time</span>
+            </button>
+          </div>
+          <div id="med-times-chips" class="times-chips-container mb-xs" aria-label="Selected dose times"></div>
+          <input id="med-times" class="form-control" type="text" placeholder="08:00, 20:00" required aria-required="true" aria-describedby="med-times-hint med-times-error">
+          <span id="med-times-hint" class="form-hint">Use 24-hour time like 08:00 or 20:30 (e.g. 08:00, 14:00)</span>
+          <div id="med-times-error" class="field-error-message hidden" role="alert"></div>
         </div>
         <div class="form-group">
-          <span class="form-label">Days of Week</span>
+          <span class="form-label">Days of Week <span class="required-indicator" aria-hidden="true">*</span></span>
           <div class="flex flex-wrap gap-md mt-xs">
             <label class="checkbox-group"><input type="checkbox" name="dow" value="0" checked> Sun</label>
             <label class="checkbox-group"><input type="checkbox" name="dow" value="1" checked> Mon</label>
@@ -900,12 +1018,12 @@
         </div>
         <div class="flex gap-md flex-wrap">
           <div class="form-group flex-1 min-w-160">
-            <label class="form-label" for="med-stock">Current Stock Count</label>
-            <input id="med-stock" class="form-control" type="number" min="0" value="30" required>
+            <label class="form-label" for="med-stock">Current Stock Count <span class="required-indicator" aria-hidden="true">*</span></label>
+            <input id="med-stock" class="form-control" type="number" min="0" value="30" required aria-required="true">
           </div>
           <div class="form-group flex-1 min-w-160">
-            <label class="form-label" for="med-threshold">Refill Alert At</label>
-            <input id="med-threshold" class="form-control" type="number" min="0" value="5" required>
+            <label class="form-label" for="med-threshold">Refill Alert At <span class="required-indicator" aria-hidden="true">*</span></label>
+            <input id="med-threshold" class="form-control" type="number" min="0" value="5" required aria-required="true">
           </div>
         </div>
         <button class="btn btn-primary btn-lg w-full mt-sm" type="submit">
@@ -928,23 +1046,23 @@
       <form id="form-add-appt">
         <div id="modal-add-appt-error" class="alert-banner alert-warning hidden mb-sm" role="alert"></div>
         <div class="form-group">
-          <label class="form-label" for="appt-doctor">Doctor Name</label>
-          <input id="appt-doctor" class="form-control" type="text" placeholder="Dr. Sarah Patel" required>
+          <label class="form-label" for="appt-doctor">Doctor Name <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="appt-doctor" class="form-control" type="text" placeholder="Dr. Sarah Patel" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="appt-specialty">Specialty</label>
-          <input id="appt-specialty" class="form-control" type="text" placeholder="Cardiology / Geriatric Care" required>
+          <label class="form-label" for="appt-specialty">Specialty <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="appt-specialty" class="form-control" type="text" placeholder="Cardiology / Geriatric Care" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="appt-location">Clinic / Hospital Location</label>
-          <input id="appt-location" class="form-control" type="text" placeholder="Apex Heart Clinic, Suite 201" required>
+          <label class="form-label" for="appt-location">Clinic / Hospital Location <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="appt-location" class="form-control" type="text" placeholder="Apex Heart Clinic, Suite 201" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="appt-datetime">Date & Time</label>
-          <input id="appt-datetime" class="form-control" type="datetime-local" required>
+          <label class="form-label" for="appt-datetime">Date & Time <span class="required-indicator" aria-hidden="true">*</span></label>
+          <input id="appt-datetime" class="form-control" type="datetime-local" required aria-required="true">
         </div>
         <div class="form-group">
-          <label class="form-label" for="appt-notes">Notes for Doctor</label>
+          <label class="form-label" for="appt-notes">Notes for Doctor <span class="optional-indicator">(optional)</span></label>
           <textarea id="appt-notes" class="form-control" placeholder="Bring blood pressure readings and current medicine list"></textarea>
         </div>
         <button class="btn btn-primary btn-lg w-full mt-sm" type="submit">
@@ -1114,37 +1232,27 @@
   </div>
 
   <!-- ========================================================================
-       FLOATING CONVERSATIONAL AI VOICE & TEXT ASSISTANT DOCK
+       MODAL 7: ACCESSIBLE DELETE CONFIRMATION DIALOG
+       Focus-trapped alert dialog naming item and supporting optimistic rollback
        ======================================================================== -->
-  <div class="ai-chat-dock" role="region" aria-label="CareCircle Voice and AI Assistant">
-    <button id="btn-toggle-ai-chat" class="ai-chat-toggle-btn" type="button" aria-expanded="false" aria-controls="ai-chat-panel">
-      <svg class="icon" aria-hidden="true"><use href="#icon-chat"/></svg>
-      <span>Assistant</span>
-    </button>
-    <div id="ai-chat-panel" class="ai-chat-panel hidden" role="dialog" aria-label="Conversational AI Assistant" hidden>
-      <div class="ai-chat-header">
-        <div class="flex items-center gap-xs">
-          <svg class="icon" aria-hidden="true"><use href="#icon-sparkles"/></svg>
-          <span>CareCircle Assistant</span>
-        </div>
-        <button id="btn-close-ai-chat" type="button" aria-label="Close Assistant">&times;</button>
+  <div id="modal-confirm-delete" class="modal-overlay hidden" role="alertdialog" aria-modal="true" aria-labelledby="confirm-delete-title" aria-describedby="confirm-delete-desc" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="confirm-delete-title">Confirm Removal</h3>
+        <button class="close-btn" data-close="modal-confirm-delete" type="button" aria-label="Cancel and close dialog">&times;</button>
       </div>
-      <div id="ai-chat-messages" class="ai-chat-messages" role="log" aria-live="polite">
-        <div class="ai-bubble assistant">
-          Hello! I am your CareCircle Voice & AI Assistant. You can speak or type:
-          <br>• "What's due today?"
-          <br>• "I took my morning medicine"
-          <br>• "Schedule appointment with Dr. Sharma next Tuesday 5pm"
-          <br>• "How was my week?"
+      <div class="modal-body">
+        <p id="confirm-delete-desc" class="mb-md text-md">
+          Are you sure you want to remove <strong id="confirm-delete-item-name">this item</strong>? This action cannot be undone.
+        </p>
+        <div class="flex-end gap-sm">
+          <button id="btn-cancel-delete" class="btn btn-secondary" type="button">Cancel</button>
+          <button id="btn-confirm-delete" class="btn btn-danger" type="button">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#icon-alert"/></svg>
+            <span>Remove</span>
+          </button>
         </div>
       </div>
-      <form id="ai-chat-form" class="ai-chat-input-bar">
-        <button id="ai-mic-btn" class="ai-mic-btn" type="button" aria-label="Speak using microphone" title="Speak to assistant">
-          <svg class="icon" aria-hidden="true"><use href="#icon-mic"/></svg>
-        </button>
-        <input id="ai-chat-input" class="form-control" type="text" placeholder="Speak or type a message..." autocomplete="off" aria-label="Ask assistant">
-        <button type="submit" class="ai-send-btn" aria-label="Send message">Send</button>
-      </form>
     </div>
   </div>
 

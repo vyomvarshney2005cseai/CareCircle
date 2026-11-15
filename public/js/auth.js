@@ -18,6 +18,11 @@ const auth = {
     }
   },
 
+  validateProfileId(id) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  },
+
   async handleRegisterElder(formData) {
     const btn = document.querySelector('#form-register button[type="submit"]');
     if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
@@ -35,6 +40,10 @@ const auth = {
   },
 
   async handleJoin(formData) {
+    if (!this.validateProfileId(formData.profileId)) {
+      ui.showAlert('Please enter a valid CareCircle Profile ID (UUID format).', 'error');
+      return;
+    }
     const btn = document.querySelector('#form-join button[type="submit"]');
     if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     try {
@@ -51,6 +60,10 @@ const auth = {
   },
 
   async handleLogin(formData) {
+    if (!this.validateProfileId(formData.profileId)) {
+      ui.showAlert('Please enter a valid CareCircle Profile ID (UUID format).', 'error');
+      return;
+    }
     const btn = document.querySelector('#form-login button[type="submit"]');
     if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); }
     try {
@@ -98,6 +111,21 @@ const auth = {
 
     const profileIdSpan = document.getElementById('header-profile-id');
     if (profileIdSpan) profileIdSpan.textContent = `Circle ID: ${this.profile.id.slice(0, 8)}...`;
+
+    const copyBtn = document.getElementById('btn-copy-circle-id');
+    if (copyBtn && this.profile?.id) {
+      copyBtn.onclick = () => {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(this.profile.id).then(() => {
+            ui.showAlert('CareCircle ID copied to clipboard!', 'success');
+          }).catch(() => {
+            ui.showAlert(`CareCircle ID: ${this.profile.id}`, 'info');
+          });
+        } else {
+          ui.showAlert(`CareCircle ID: ${this.profile.id}`, 'info');
+        }
+      };
+    }
 
     const userBadge = document.getElementById('header-user-badge');
     if (userBadge) {

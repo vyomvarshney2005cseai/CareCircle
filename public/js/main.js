@@ -92,49 +92,72 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Auth view tab buttons
+  // Auth view WAI-ARIA tab buttons & keyboard navigation
   const loginBtn = document.getElementById('tab-btn-login');
   const joinBtn = document.getElementById('tab-btn-join');
   const regBtn = document.getElementById('tab-btn-register');
   const formLogin = document.getElementById('form-login');
   const formJoin = document.getElementById('form-join');
   const formReg = document.getElementById('form-register');
+  const authTabs = [loginBtn, joinBtn, regBtn].filter(Boolean);
 
-  if (loginBtn) {
-    loginBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      loginBtn.className = 'btn btn-primary';
-      if (joinBtn) joinBtn.className = 'btn btn-secondary';
-      if (regBtn) regBtn.className = 'btn btn-secondary';
-      if (formLogin) formLogin.classList.remove('hidden');
-      if (formJoin) formJoin.classList.add('hidden');
-      if (formReg) formReg.classList.add('hidden');
+  function activateAuthTab(targetTab) {
+    authTabs.forEach((tab) => {
+      const match = tab === targetTab;
+      tab.setAttribute('aria-selected', match ? 'true' : 'false');
+      tab.setAttribute('tabindex', match ? '0' : '-1');
+      tab.className = match ? 'btn btn-primary flex-1' : 'btn btn-secondary flex-1';
+    });
+
+    if (formLogin) formLogin.classList.toggle('hidden', targetTab !== loginBtn);
+    if (formJoin) formJoin.classList.toggle('hidden', targetTab !== joinBtn);
+    if (formReg) formReg.classList.toggle('hidden', targetTab !== regBtn);
+
+    targetTab.focus();
+  }
+
+  if (loginBtn) loginBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(loginBtn); });
+  if (joinBtn) joinBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(joinBtn); });
+  if (regBtn) regBtn.addEventListener('click', (e) => { e.preventDefault(); activateAuthTab(regBtn); });
+
+  // Arrow navigation for auth tabs per WAI-ARIA tabs pattern
+  const authTabsRow = document.querySelector('.auth-tabs-row');
+  if (authTabsRow) {
+    authTabsRow.addEventListener('keydown', (e) => {
+      const activeIndex = authTabs.indexOf(document.activeElement);
+      if (activeIndex === -1) return;
+
+      let targetIndex = null;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        targetIndex = (activeIndex + 1) % authTabs.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        targetIndex = (activeIndex - 1 + authTabs.length) % authTabs.length;
+      } else if (e.key === 'Home') {
+        targetIndex = 0;
+      } else if (e.key === 'End') {
+        targetIndex = authTabs.length - 1;
+      }
+
+      if (targetIndex !== null) {
+        e.preventDefault();
+        activateAuthTab(authTabs[targetIndex]);
+      }
     });
   }
 
-  if (joinBtn) {
-    joinBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      joinBtn.className = 'btn btn-primary';
-      if (loginBtn) loginBtn.className = 'btn btn-secondary';
-      if (regBtn) regBtn.className = 'btn btn-secondary';
-      if (formJoin) formJoin.classList.remove('hidden');
-      if (formLogin) formLogin.classList.add('hidden');
-      if (formReg) formReg.classList.add('hidden');
+  // Password visibility show/hide toggle buttons
+  document.querySelectorAll('.btn-toggle-pw').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const isPassword = input.type === 'password';
+      input.type = isPassword ? 'text' : 'password';
+      btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
+      btn.setAttribute('title', isPassword ? 'Hide password' : 'Show password');
+      btn.innerHTML = `<svg class="icon icon-sm" aria-hidden="true"><use href="#icon-${isPassword ? 'eye-off' : 'eye'}"/></svg>`;
     });
-  }
-
-  if (regBtn) {
-    regBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      regBtn.className = 'btn btn-primary';
-      if (loginBtn) loginBtn.className = 'btn btn-secondary';
-      if (joinBtn) joinBtn.className = 'btn btn-secondary';
-      if (formReg) formReg.classList.remove('hidden');
-      if (formLogin) formLogin.classList.add('hidden');
-      if (formJoin) formJoin.classList.add('hidden');
-    });
-  }
+  });
 
   // Auth Form Submits
   if (formLogin) {
@@ -179,7 +202,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const openAddMedBtn = document.getElementById('btn-open-add-med');
   if (openAddMedBtn) {
-    openAddMedBtn.addEventListener('click', () => ui.openModal('modal-add-med'));
+    openAddMedBtn.addEventListener('click', () => {
+      ui.openModal('modal-add-med');
+      refreshTimeChips();
+    });
   }
 
   const openAddApptBtn = document.getElementById('btn-open-add-appt');
@@ -197,6 +223,58 @@ document.addEventListener('DOMContentLoaded', async () => {
     sendTestBtn.addEventListener('click', () => app.handleSendTestReminder());
   }
 
+  // Add Med time picker and chip management
+  const timePicker = document.getElementById('med-time-picker');
+  const addTimeBtn = document.getElementById('btn-add-time-chip');
+  const timesChips = document.getElementById('med-times-chips');
+  const medTimesInput = document.getElementById('med-times');
+  const medTimesError = document.getElementById('med-times-error');
+
+  function refreshTimeChips() {
+    if (!timesChips || !medTimesInput) return;
+    timesChips.innerHTML = '';
+    const currentTimes = medTimesInput.value.split(',').map((t) => t.trim()).filter(Boolean);
+    currentTimes.forEach((t) => {
+      const chip = document.createElement('span');
+      chip.className = 'time-chip';
+      chip.innerHTML = `
+        <span>${ui.escapeHtml(t)}</span>
+        <button type="button" class="time-chip-remove" aria-label="Remove time ${ui.escapeHtml(t)}" data-time="${ui.escapeHtml(t)}">&times;</button>
+      `;
+      chip.querySelector('.time-chip-remove').addEventListener('click', () => {
+        const filtered = currentTimes.filter((x) => x !== t);
+        medTimesInput.value = filtered.join(', ');
+        refreshTimeChips();
+      });
+      timesChips.appendChild(chip);
+    });
+  }
+
+  if (addTimeBtn && timePicker && medTimesInput) {
+    addTimeBtn.addEventListener('click', () => {
+      const val = timePicker.value;
+      if (!val) {
+        ui.showAlert('Please pick a time from the clock first.', 'info');
+        return;
+      }
+      const currentTimes = medTimesInput.value.split(',').map((t) => t.trim()).filter(Boolean);
+      if (!currentTimes.includes(val)) {
+        currentTimes.push(val);
+        currentTimes.sort();
+        medTimesInput.value = currentTimes.join(', ');
+        refreshTimeChips();
+        if (medTimesError) medTimesError.classList.add('hidden');
+      }
+    });
+  }
+
+  if (medTimesInput) {
+    medTimesInput.addEventListener('input', () => {
+      refreshTimeChips();
+      if (medTimesError) medTimesError.classList.add('hidden');
+    });
+  }
+
   // Add Med form submit
   const formAddMed = document.getElementById('form-add-med');
   if (formAddMed) {
@@ -210,24 +288,50 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       const rawTimes = document.getElementById('med-times').value.split(',').map((t) => t.trim()).filter(Boolean);
       if (rawTimes.length === 0) {
+        if (medTimesError) {
+          medTimesError.textContent = 'Please enter at least one scheduled time (e.g. 08:00 or 14:00).';
+          medTimesError.classList.remove('hidden');
+        }
         ui.showAlert('Please enter at least one scheduled time (e.g. 08:00 or 14:00).', 'error');
         return;
       }
-      const times = rawTimes.map((t) => {
+
+      // Auto-pad single digit hours (e.g. 2:11 -> 02:11)
+      const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
+      const normalizedTimes = [];
+      for (const t of rawTimes) {
         const parts = t.split(':');
+        let normalized = t;
         if (parts.length === 2) {
-          return parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
+          normalized = parts[0].padStart(2, '0') + ':' + parts[1].padStart(2, '0');
         }
-        return t;
-      });
+        if (!timeRegex.test(normalized)) {
+          if (medTimesError) {
+            medTimesError.textContent = 'Use 24-hour time like 08:00 or 20:30 (e.g., 08:00, 14:00)';
+            medTimesError.classList.remove('hidden');
+          }
+          document.getElementById('med-times').focus();
+          ui.showAlert('Use 24-hour time like 08:00 or 20:30.', 'error');
+          return;
+        }
+        normalizedTimes.push(normalized);
+      }
+
+      if (medTimesError) medTimesError.classList.add('hidden');
 
       app.handleAddMedication({
         name: document.getElementById('med-name').value.trim(),
         dosage: document.getElementById('med-dosage').value.trim(),
         form: document.getElementById('med-form').value,
         instructions: document.getElementById('med-instructions').value.trim(),
-        times,
+        times: normalizedTimes,
         daysOfWeek,
+        startDate: new Date().toISOString().slice(0, 10),
+        stockCount: parseInt(document.getElementById('med-stock').value, 10) || 0,
+        refillThreshold: parseInt(document.getElementById('med-threshold').value, 10) || 0
+      });
+    });
+  }
         startDate: new Date().toISOString().slice(0, 10),
         stockCount: parseInt(document.getElementById('med-stock').value, 10) || 0,
         refillThreshold: parseInt(document.getElementById('med-threshold').value, 10) || 0

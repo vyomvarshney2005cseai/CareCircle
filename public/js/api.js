@@ -31,9 +31,17 @@ const api = {
       let message = data?.error?.message || `Request failed with status ${response.status}`;
       if (data?.error?.details && Array.isArray(data.error.details) && data.error.details.length > 0) {
         const detailStr = data.error.details
-          .map((d) => (d.field ? `${d.field}: ${d.message}` : d.message))
-          .join('; ');
-        message = `${message} (${detailStr})`;
+          .map((d) => {
+            let fieldName = d.field || '';
+            if (fieldName.startsWith('times')) fieldName = 'Times';
+            if (fieldName === 'doctorName') fieldName = 'Doctor Name';
+            if (fieldName === 'dosage') fieldName = 'Dosage';
+            if (fieldName === 'instructions') fieldName = 'Instructions';
+            if (fieldName === 'profileId') fieldName = 'Profile ID';
+            return fieldName ? `${fieldName}: ${d.message}` : d.message;
+          })
+          .join('. ');
+        message = detailStr || message;
       }
       const err = new Error(message);
       err.status = response.status;

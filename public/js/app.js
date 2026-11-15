@@ -335,6 +335,24 @@ window.app = {
       if (val30) val30.textContent = `${stats.thirtyDays.rate}%`;
       if (healthStat7) healthStat7.textContent = `${stats.sevenDays.rate}%`;
       if (healthStat30) healthStat30.textContent = `${stats.thirtyDays.rate}%`;
+
+      // Populate accessible table alternative
+      const t7Total = document.getElementById('adherence-table-7d-total');
+      const t7Taken = document.getElementById('adherence-table-7d-taken');
+      const t7Pct = document.getElementById('adherence-table-7d-pct');
+      const t30Total = document.getElementById('adherence-table-30d-total');
+      const t30Taken = document.getElementById('adherence-table-30d-taken');
+      const t30Pct = document.getElementById('adherence-table-30d-pct');
+      const todayPctEl = document.getElementById('health-stat-today');
+      const tTodayPct = document.getElementById('adherence-table-today-pct');
+
+      if (t7Total) t7Total.textContent = stats.sevenDays.total;
+      if (t7Taken) t7Taken.textContent = stats.sevenDays.taken;
+      if (t7Pct) t7Pct.textContent = `${stats.sevenDays.rate}%`;
+      if (t30Total) t30Total.textContent = stats.thirtyDays.total;
+      if (t30Taken) t30Taken.textContent = stats.thirtyDays.taken;
+      if (t30Pct) t30Pct.textContent = `${stats.thirtyDays.rate}%`;
+      if (tTodayPct && todayPctEl) tTodayPct.textContent = todayPctEl.textContent;
     } catch (err) {
       console.error('Failed to load adherence', err);
     }
@@ -427,7 +445,8 @@ window.app = {
         <div class="card empty-state">
           <svg class="empty-state-illustration" viewBox="0 0 120 120" fill="none" aria-hidden="true">
             <circle cx="60" cy="60" r="54" fill="#E3F4EC" />
-            <path d="M44 76L76 44M52 36L84 68" stroke="#1F7A5C" stroke-width="6" stroke-linecap="round"/>
+            <path d="M48 72L72 48A16 16 0 0048 24L24 48A16 16 0 0048 72Z" stroke="#1F7A5C" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+            <line x1="36" y1="36" x2="60" y2="60" stroke="#1F7A5C" stroke-width="5" stroke-linecap="round"/>
           </svg>
           <h3 class="empty-state-title">No Medications Added Yet</h3>
           <p class="empty-state-desc">Keep your routine organized by adding daily prescriptions and refill reminders.</p>
@@ -526,19 +545,70 @@ window.app = {
     }
   },
 
-  async deleteMed(medId) {
-    if (!confirm('Are you sure you want to remove this medication?')) return;
-    try {
-      const res = await api.deleteMedication(auth.profile.id, medId);
-      if (res.pending) {
-        ui.showAlert('Deletion submitted for Elder Approval.', 'info');
-      } else {
-        ui.showAlert('Medication removed.', 'success');
+  confirmDeleteAction({ title = 'Confirm Removal', name = 'this item', onConfirm }) {
+    const modal = document.getElementById('modal-confirm-delete');
+    if (!modal) {
+      if (confirm(`Are you sure you want to remove ${name}?`)) {
+        onConfirm();
       }
-      await this.loadAllData();
-    } catch (err) {
-      ui.showAlert(err.message, 'error');
+      return;
     }
+    const titleEl = document.getElementById('confirm-delete-title');
+    const nameEl = document.getElementById('confirm-delete-item-name');
+    const confirmBtn = document.getElementById('btn-confirm-delete');
+    const cancelBtn = document.getElementById('btn-cancel-delete');
+
+    if (titleEl) titleEl.textContent = title;
+    if (nameEl) nameEl.textContent = name;
+
+    const cleanup = () => {
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      ui.closeModal('modal-confirm-delete');
+    };
+
+    confirmBtn.onclick = async () => {
+      cleanup();
+      await onConfirm();
+    };
+
+    cancelBtn.onclick = () => {
+      cleanup();
+    };
+
+    ui.openModal('modal-confirm-delete');
+    if (cancelBtn) cancelBtn.focus();
+  },
+
+  async deleteMed(medId) {
+    const med = this.currentMedications.find((m) => m.id === medId);
+    const medName = med ? med.name : 'this medication';
+
+    this.confirmDeleteAction({
+      title: 'Remove Medication',
+      name: medName,
+      onConfirm: async () => {
+        // Optimistic UI update
+        const originalMeds = [...this.currentMedications];
+        this.currentMedications = this.currentMedications.filter((m) => m.id !== medId);
+        this.renderMedications(this.currentMedications);
+
+        try {
+          const res = await api.deleteMedication(auth.profile.id, medId);
+          if (res.pending) {
+            ui.showAlert('Deletion submitted for Elder Approval.', 'info');
+          } else {
+            ui.showAlert(`${medName} removed.`, 'success');
+          }
+          await this.loadAllData();
+        } catch (err) {
+          // Rollback on failure
+          this.currentMedications = originalMeds;
+          this.renderMedications(this.currentMedications);
+          ui.showAlert(err.message, 'error');
+        }
+      }
+    });
   },
 
   // --- Appointments ---
@@ -738,18 +808,34 @@ window.app = {
   },
 
   async deleteAppt(apptId) {
-    if (!confirm('Are you sure you want to cancel this appointment?')) return;
-    try {
-      const res = await api.deleteAppointment(auth.profile.id, apptId);
-      if (res.pending) {
-        ui.showAlert('Cancellation submitted for Elder Approval.', 'info');
-      } else {
-        ui.showAlert('Appointment cancelled.', 'success');
+    const appt = this.currentAppointments.find((a) => a.id === apptId);
+    const apptName = appt ? `appointment with Dr. ${appt.doctorName}` : 'this appointment';
+
+    this.confirmDeleteAction({
+      title: 'Cancel Appointment',
+      name: apptName,
+      onConfirm: async () => {
+        // Optimistic UI update
+        const originalAppts = [...this.currentAppointments];
+        this.currentAppointments = this.currentAppointments.filter((a) => a.id !== apptId);
+        this.renderAppointments(this.currentAppointments);
+
+        try {
+          const res = await api.deleteAppointment(auth.profile.id, apptId);
+          if (res.pending) {
+            ui.showAlert('Cancellation submitted for Elder Approval.', 'info');
+          } else {
+            ui.showAlert('Appointment cancelled.', 'success');
+          }
+          await this.loadAllData();
+        } catch (err) {
+          // Rollback on failure
+          this.currentAppointments = originalAppts;
+          this.renderAppointments(this.currentAppointments);
+          ui.showAlert(err.message, 'error');
+        }
       }
-      await this.loadAllData();
-    } catch (err) {
-      ui.showAlert(err.message, 'error');
-    }
+    });
   },
 
   // --- Family & CareCircle Access ---
@@ -834,14 +920,22 @@ window.app = {
   },
 
   async revokeMember(memberId) {
-    if (!confirm('Are you sure you want to revoke access for this member?')) return;
-    try {
-      await api.revokeMember(auth.profile.id, memberId);
-      ui.showAlert('Member access revoked.', 'info');
-      await this.loadAllData();
-    } catch (err) {
-      ui.showAlert(err.message, 'error');
-    }
+    const member = this.currentMembers.find((m) => m.id === memberId);
+    const memberName = member ? `${member.name} (${member.role})` : 'this member';
+
+    this.confirmDeleteAction({
+      title: 'Revoke Member Access',
+      name: memberName,
+      onConfirm: async () => {
+        try {
+          await api.revokeMember(auth.profile.id, memberId);
+          ui.showAlert('Member access revoked.', 'info');
+          await this.loadAllData();
+        } catch (err) {
+          ui.showAlert(err.message, 'error');
+        }
+      }
+    });
   },
 
   async handleToggleApproval(enabled) {
@@ -969,15 +1063,24 @@ window.app = {
     const tipEl = document.getElementById('ai-insight-tip');
     if (!box || !textEl) return;
 
+    if (!this.currentMedications || this.currentMedications.length === 0) {
+      textEl.textContent = 'Add medicines and track for a few days to see insights.';
+      if (tipEl) tipEl.textContent = '';
+      box.classList.remove('hidden');
+      return;
+    }
+
     try {
       const insight = await api.getAdherenceInsight();
       if (insight && insight.insight) {
-        textEl.textContent = `"${insight.insight}"`;
-        tipEl.textContent = insight.recommendation ? `Tip: ${insight.recommendation}` : '';
+        textEl.textContent = insight.insight.startsWith('Add medicines') ? insight.insight : `"${insight.insight}"`;
+        if (tipEl) tipEl.textContent = insight.recommendation ? `Tip: ${insight.recommendation}` : '';
         box.classList.remove('hidden');
       }
     } catch (err) {
-      console.warn('Could not load AI insight', err);
+      textEl.textContent = 'Add medicines and track for a few days to see insights.';
+      if (tipEl) tipEl.textContent = '';
+      box.classList.remove('hidden');
     }
   },
 
@@ -1314,7 +1417,17 @@ window.app = {
       }
     } catch (err) {
       thinkingBubble.remove();
-      this.appendChatBubble('assistant', `Error: ${err.message || 'Could not process query'}`);
+      let friendlyError = "I'm having trouble processing that right now. Please try asking again or check your connection.";
+      if (err.status === 401) {
+        friendlyError = 'Please sign in to use the assistant.';
+      } else if (err.status === 403) {
+        friendlyError = "You don't have permission to perform that action.";
+      } else if (err.status === 429) {
+        friendlyError = 'The assistant is currently busy. Please wait a moment and try again.';
+      } else if (err.message && !err.message.startsWith('Request failed') && !err.message.includes('times.0')) {
+        friendlyError = err.message;
+      }
+      this.appendChatBubble('assistant', friendlyError);
     }
   },
 

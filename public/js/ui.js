@@ -80,7 +80,7 @@ const ui = {
     if (toggleBtn) {
       toggleBtn.setAttribute('aria-pressed', isHigh ? 'true' : 'false');
       toggleBtn.classList.toggle('active', isHigh);
-      toggleBtn.innerHTML = `${this.icon('contrast')} <span>${isHigh ? 'Standard Contrast' : 'High Contrast'}</span>`;
+      toggleBtn.innerHTML = `${this.icon('contrast')} <span>High Contrast</span>`;
     }
 
     if (persist) {
@@ -145,7 +145,17 @@ const ui = {
 
     const activeEl = document.getElementById(`tab-${tabName}`);
     if (activeEl) {
-      this.announce(`Switched to ${activeEl.getAttribute('aria-label') || tabName} tab`);
+      const tabLabels = {
+        today: "Today's Schedule",
+        meds: 'Medicines',
+        appointments: 'Calendar & Appointments',
+        family: 'Care Circle',
+        health: 'Health & Adherence Trends',
+        notifications: 'Reminders & Alerts',
+        audit: 'Activity Log Trail'
+      };
+      const friendlyName = tabLabels[tabName] || activeEl.getAttribute('aria-label') || tabName;
+      this.announce(`Viewing ${friendlyName}`);
     }
 
     // Close mobile "More" sheet if open
@@ -217,20 +227,38 @@ const ui = {
   },
 
   /**
-   * Accessible Toast Alert
+   * Accessible Toast Alert (auto-dismiss after 4s with close button).
    */
   showAlert(message, type = 'info') {
     const banner = document.getElementById('toast-notification');
     if (!banner) return;
 
-    banner.textContent = message;
+    const textEl = document.getElementById('toast-text');
+    if (textEl) {
+      textEl.textContent = message;
+    } else {
+      banner.textContent = message;
+    }
+
     banner.className = `alert-banner alert-${type === 'error' ? 'warning' : 'info'}`;
     banner.classList.remove('hidden');
 
+    const closeBtn = document.getElementById('btn-toast-close');
+    if (closeBtn) {
+      closeBtn.onclick = () => {
+        banner.classList.add('hidden');
+        if (this._toastTimer) clearTimeout(this._toastTimer);
+      };
+    }
+
     this.announce(`${type === 'error' ? 'Error' : 'Notification'}: ${message}`);
 
-    setTimeout(() => {
+    if (this._toastTimer) {
+      clearTimeout(this._toastTimer);
+    }
+
+    this._toastTimer = setTimeout(() => {
       banner.classList.add('hidden');
-    }, 5000);
+    }, 4000);
   }
 };

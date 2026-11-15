@@ -27,9 +27,18 @@ app.use(
         fontSrc: ["'self'", 'https://fonts.gstatic.com']
       }
     },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    frameguard: { action: 'deny' },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
     crossOriginEmbedderPolicy: false
   })
 );
+
+// Standard Permissions-Policy Header (microphone for Web Speech assistant)
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'microphone=(self)');
+  next();
+});
 
 // Strict CORS locked down
 app.use(
@@ -82,7 +91,13 @@ app.use('/api', apiLimiter, apiRouter);
 const publicDir = path.join(__dirname, '..', 'public');
 app.use(
   express.static(publicDir, {
-    maxAge: config.env === 'production' ? '1d' : 0,
+    setHeaders: (res, filePath) => {
+      if (filePath.endsWith('index.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      } else {
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+      }
+    },
     etag: true
   })
 );

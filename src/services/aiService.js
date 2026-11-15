@@ -80,6 +80,20 @@ class AIService {
     const medications = await repo.listMedications(profileId, true);
     const doseLogs = await repo.listDoseLogs(profileId, {});
 
+    const distinctDays = new Set(
+      (doseLogs || [])
+        .map((log) => log.date || (log.scheduledTime ? log.scheduledTime.slice(0, 10) : (log.takenAt ? log.takenAt.slice(0, 10) : null)))
+        .filter(Boolean)
+    );
+
+    if (!medications || medications.length === 0 || distinctDays.size < 3) {
+      return {
+        insight: 'Add medicines and track for a few days to see insights.',
+        positiveNote: 'Your personalized routine insights and schedule patterns will appear here once you have recorded a few days of doses.',
+        recommendation: 'Keep logging your doses daily to unlock routine trends.'
+      };
+    }
+
     return this._provider.generateAdherenceInsight(doseLogs, medications);
   }
 
