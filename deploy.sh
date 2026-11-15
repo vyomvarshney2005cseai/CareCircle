@@ -5,6 +5,8 @@
 
 set -euo pipefail
 
+export PATH="$PATH:/Users/vyomvarshney2005/google-cloud-sdk/bin"
+
 SERVICE_NAME="carecircle"
 REGION="${GCP_REGION:-asia-south1}"
 PROJECT_ID="${GCP_PROJECT_ID:-project-c03ff828-a1f6-40d1-a87}"
