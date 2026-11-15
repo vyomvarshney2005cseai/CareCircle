@@ -278,7 +278,7 @@ gcloud run deploy carecircle \
   --region asia-south1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars DATA_STORE=firestore,FIRESTORE_PROJECT_ID=carecircle-471887193815,NODE_ENV=production,TASK_TOKEN=carecircle-task-secret-token-2026,GEMINI_MODEL=gemini-2.5-flash \
+  --set-env-vars DATA_STORE=firestore,FIRESTORE_PROJECT_ID=carecircle-471887193815,NODE_ENV=production,TASK_TOKEN=${TASK_TOKEN},GEMINI_MODEL=gemini-2.5-flash \
   --set-secrets GEMINI_API_KEY=GEMINI_API_KEY:latest,JWT_SECRET=JWT_SECRET:latest,COOKIE_SECRET=COOKIE_SECRET:latest,SMTP_USER=SMTP_USER:latest,SMTP_PASS=SMTP_PASS:latest
 ```
 
@@ -288,7 +288,7 @@ gcloud scheduler jobs create http carecircle-run-reminders \
   --schedule="*/5 * * * *" \
   --uri="https://carecircle-471887193815.asia-south1.run.app/tasks/run-reminders" \
   --http-method=POST \
-  --headers="X-Task-Token=carecircle-task-secret-token-2026" \
+  --headers="X-Task-Token=${TASK_TOKEN}" \
   --location=asia-south1 \
   --description="Evaluates medication schedules, upcoming doses, missed doses, and escalations every 5 minutes"
 ```
@@ -299,7 +299,7 @@ gcloud scheduler jobs create http carecircle-weekly-digest \
   --schedule="0 9 * * 0" \
   --uri="https://carecircle-471887193815.asia-south1.run.app/tasks/weekly-digest" \
   --http-method=POST \
-  --headers="X-Task-Token=carecircle-task-secret-token-2026" \
+  --headers="X-Task-Token=${TASK_TOKEN}" \
   --location=asia-south1 \
   --description="Dispatches weekly adherence digest to family and caretakers every Sunday morning"
 ```
