@@ -1,0 +1,167 @@
+/**
+ * CareCircle Design Tokens (WCAG 2.1 AA Compliant)
+ * Calm, warm, trustworthy, and senior-accessible palette.
+ */
+:root {
+  /* Surface & Background */
+  --bg: #FFF8F1;
+  --surface: #FFFFFF;
+  --surface-subtle: #FDF3E7;
+  --surface-card: #FFFFFF;
+  --surface-tint: #F7EFE6;
+
+  /* Typography Colors (Strictly verified >= 4.5:1 on background) */
+  --ink: #1F2A37;
+  --ink-soft: #4B5563;
+  --ink-muted: #6B7280;
+  --ink-inverse: #FFFFFF;
+
+  /* Brand Primary (Teal Green) */
+  --primary: #1F7A5C;
+  --primary-soft: #E3F4EC;
+  --primary-deep: #17604A;
+  --primary-hover: #17604A;
+
+  /* Call-to-Action (Warm Sunshine Yellow - paired with dark ink text) */
+  --cta: #FFC94A;
+  --cta-ink: #1F2A37;
+  --cta-hover: #F5B82E;
+  --cta-deep: #D49B1E;
+
+  /* Accent & Alert (Warm Coral) */
+  --accent: #E5604D;
+  --accent-soft: #FDE8E5;
+  --accent-deep: #C63D2B;
+
+  /* Information & Calendar (Calm Blue >= 4.5:1) */
+  --info: #1F6FA6;
+  --info-soft: #E0F2FE;
+  --info-deep: #185580;
+
+  /* Status Tokens (Pair color with icon + text) */
+  --status-taken: #1F7A5C;
+  --status-taken-bg: #E3F4EC;
+  --status-pending: #8A5300;
+  --status-pending-bg: #FEF3C7;
+  --status-missed: #C62F18;
+  --status-missed-bg: #FEE2E2;
+  --status-snoozed: #1F6FA6;
+  --status-snoozed-bg: #E0F2FE;
+  --status-skipped: #4B5563;
+  --status-skipped-bg: #F3F4F6;
+  --status-low-stock: #8A5300;
+  --status-low-stock-bg: #FEF3C7;
+
+  /* Borders & Focus */
+  --border-subtle: rgba(31, 42, 55, 0.1);
+  --border-card: rgba(31, 42, 55, 0.08);
+  --border-focus: #1F7A5C;
+  --focus-ring: 0 0 0 3px rgba(31, 122, 92, 0.4);
+
+  /* Elevation & Shadows */
+  --shadow-card: 0 8px 24px rgba(31, 42, 55, 0.08);
+  --shadow-elevated: 0 16px 36px rgba(31, 42, 55, 0.12);
+  --shadow-modal: 0 24px 48px rgba(31, 42, 55, 0.18);
+  --shadow-pill: 0 4px 12px rgba(31, 42, 55, 0.06);
+
+  /* Radii */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-card: 26px;
+  --radius-hero: 32px;
+  --radius-pill: 9999px;
+
+  /* Touch Targets (Senior Accessible: 56px primary, 48px standard) */
+  --touch-target-hero: 56px;
+  --touch-target-min: 48px;
+
+  /* Typography */
+  --font-serif: 'Fraunces', Georgia, serif;
+  --font-sans: 'Nunito', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-size-base: 20px;
+}
+
+/* Accessible Text Sizing Controls (A / A+ / A++) */
+body[data-text-size="md"] {
+  --font-size-base: 20px;
+}
+body[data-text-size="lg"] {
+  --font-size-base: 24px;
+}
+body[data-text-size="xl"] {
+  --font-size-base: 28px;
+}
+
+/* High Contrast Mode (WCAG AAA >= 7:1 Contrast Ratio) */
+body.high-contrast {
+  --bg: #FFFFFF !important;
+  --surface: #FFFFFF !important;
+  --surface-subtle: #FFFFFF !important;
+  --surface-card: #FFFFFF !important;
+  --surface-tint: #FFFFFF !important;
+  --ink: #000000 !important;
+  --ink-soft: #000000 !important;
+  --ink-muted: #000000 !important;
+  --primary: #000000 !important;
+  --primary-soft: #FFFFFF !important;
+  --primary-deep: #000000 !important;
+  --cta: #000000 !important;
+  --cta-ink: #FFFFFF !important;
+  --accent: #000000 !important;
+  --accent-soft: #FFFFFF !important;
+  --info: #000000 !important;
+  --info-soft: #FFFFFF !important;
+  --status-taken: #000000 !important;
+  --status-taken-bg: #FFFFFF !important;
+  --status-pending: #000000 !important;
+  --status-pending-bg: #FFFFFF !important;
+  --status-missed: #000000 !important;
+  --status-missed-bg: #FFFFFF !important;
+  --status-snoozed: #000000 !important;
+  --status-snoozed-bg: #FFFFFF !important;
+  --status-skipped: #000000 !important;
+  --status-skipped-bg: #FFFFFF !important;
+  --border-subtle: #000000 !important;
+  --border-card: #000000 !important;
+  --border-focus: #000000 !important;
+  --shadow-card: none !important;
+  --shadow-elevated: none !important;
+  --shadow-modal: none !important;
+  --shadow-pill: none !important;
+}
+
+body.high-contrast .card,
+body.high-contrast .hero-card,
+body.high-contrast .stat-box,
+body.high-contrast .modal-card,
+body.high-contrast .dose-card,
+body.high-contrast .alert-banner,
+body.high-contrast .senior-bar,
+body.high-contrast .desktop-sidebar,
+body.high-contrast .mobile-bottom-bar {
+  border: 3px solid #000000 !important;
+  box-shadow: none !important;
+}
+
+body.high-contrast .btn {
+  border: 3px solid #000000 !important;
+  font-weight: 800 !important;
+}
+
+body.high-contrast input,
+body.high-contrast select,
+body.high-contrast textarea {
+  border: 3px solid #000000 !important;
+  color: #000000 !important;
+  background: #FFFFFF !important;
+}
+
+/* Motion Accessibility (prefers-reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

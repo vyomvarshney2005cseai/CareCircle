@@ -60,6 +60,16 @@ const ui = {
   },
 
   /**
+   * Return inline SVG sprite line icon markup.
+   * @param {string} name - icon name matching #icon-{name}
+   * @param {string} [extraClass='']
+   * @returns {string}
+   */
+  icon(name, extraClass = '') {
+    return `<svg class="icon ${extraClass}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+  },
+
+  /**
    * Toggle High Contrast Theme (persisted in localStorage).
    */
   toggleHighContrast(force = null, persist = true) {
@@ -70,7 +80,7 @@ const ui = {
     if (toggleBtn) {
       toggleBtn.setAttribute('aria-pressed', isHigh ? 'true' : 'false');
       toggleBtn.classList.toggle('active', isHigh);
-      toggleBtn.innerHTML = isHigh ? '⚡ Standard Contrast' : '⚡ High Contrast';
+      toggleBtn.innerHTML = `${this.icon('contrast')} <span>${isHigh ? 'Standard Contrast' : 'High Contrast'}</span>`;
     }
 
     if (persist) {
@@ -90,7 +100,7 @@ const ui = {
     if (toggleBtn) {
       toggleBtn.setAttribute('aria-pressed', isElder ? 'true' : 'false');
       toggleBtn.classList.toggle('active', isElder);
-      toggleBtn.innerHTML = isElder ? '👨‍👩‍👧 Switch to Full View' : '👴 Elder Mode: Simplified';
+      toggleBtn.innerHTML = `${this.icon('user')} <span>${isElder ? 'Full Caretaker View' : 'Elder Mode: Simplified'}</span>`;
     }
 
     const banner = document.getElementById('elder-mode-banner');
@@ -119,6 +129,7 @@ const ui = {
       const match = tab.dataset.tab === tabName;
       tab.classList.toggle('active', match);
       tab.setAttribute('aria-selected', match ? 'true' : 'false');
+      tab.setAttribute('aria-current', match ? 'page' : 'false');
       tab.setAttribute('tabindex', match ? '0' : '-1');
     });
 
@@ -135,6 +146,12 @@ const ui = {
     const activeEl = document.getElementById(`tab-${tabName}`);
     if (activeEl) {
       this.announce(`Switched to ${activeEl.getAttribute('aria-label') || tabName} tab`);
+    }
+
+    // Close mobile "More" sheet if open
+    const sheetMore = document.getElementById('sheet-more');
+    if (sheetMore && !sheetMore.classList.contains('hidden')) {
+      this.closeModal('sheet-more');
     }
   },
 

@@ -1,0 +1,256 @@
+/**
+ * Base styles, layout scaffolding, typography, and utility classes
+ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: var(--font-size-base);
+  background-color: var(--bg);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: 1.6;
+  background-color: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  padding-bottom: 96px; /* space for mobile bottom bar */
+}
+
+@media (min-width: 1024px) {
+  body {
+    padding-bottom: 0;
+  }
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: 1.85rem; margin-bottom: 0.5rem; }
+h2 { font-size: 1.45rem; margin-bottom: 0.4rem; }
+h3 { font-size: 1.2rem; margin-bottom: 0.3rem; }
+h4 { font-size: 1.05rem; }
+
+p {
+  margin-bottom: 0.75rem;
+}
+
+a {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+a:hover, a:focus {
+  color: var(--primary-deep);
+}
+
+/* Accessible Keyboard Focus Ring */
+:focus-visible {
+  outline: 3px solid var(--border-focus);
+  outline-offset: 3px;
+}
+
+/* Screen Reader Only Utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip-to-content Link (WCAG 2.1 AA 2.4.1) */
+.skip-link {
+  position: absolute;
+  top: -120px;
+  left: 20px;
+  background-color: #000000;
+  color: #FFFFFF;
+  padding: 14px 24px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  border: 3px solid var(--cta);
+  border-radius: var(--radius-sm);
+  z-index: 99999;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+
+.skip-link:focus {
+  top: 16px;
+}
+
+/* Layout Containers */
+.container {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1040px;
+    padding: 0 24px;
+  }
+}
+
+/* App Shell (Desktop Left Sidebar + Centered Main) */
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+  position: relative;
+}
+
+.desktop-sidebar {
+  display: none;
+}
+
+.app-main-column {
+  flex: 1;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 1024px) {
+  .desktop-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 280px;
+    background: var(--surface);
+    border-right: 1px solid var(--border-subtle);
+    padding: 28px 20px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+
+  .app-main-column {
+    padding-left: 20px;
+    padding-right: 20px;
+    max-width: calc(100% - 280px);
+  }
+}
+
+/* Mobile Bottom Navigation Bar (Phone <= 1023px) */
+.mobile-bottom-bar {
+  display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 76px;
+  background: var(--surface);
+  border-top: 1px solid var(--border-subtle);
+  box-shadow: 0 -4px 16px rgba(31, 42, 55, 0.06);
+  z-index: 500;
+  justify-content: space-around;
+  align-items: center;
+  padding: 6px 12px env(safe-area-inset-bottom, 6px);
+}
+
+@media (min-width: 1024px) {
+  .mobile-bottom-bar {
+    display: none;
+  }
+}
+
+/* Decorative Background Blobs */
+.bg-blob {
+  position: fixed;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.16;
+}
+
+.bg-blob-1 {
+  top: -80px;
+  right: -80px;
+  width: 380px;
+  height: 380px;
+}
+
+.bg-blob-2 {
+  bottom: 60px;
+  left: -90px;
+  width: 320px;
+  height: 320px;
+}
+
+/* Visibility Utilities */
+.hidden {
+  display: none !important;
+}
+
+/* Semantic Spacing & Flex Utilities */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.flex-1 { flex: 1; }
+.w-full { width: 100%; }
+
+.gap-xs { gap: 4px; }
+.gap-sm { gap: 8px; }
+.gap-md { gap: 14px; }
+.gap-lg { gap: 20px; }
+
+.mb-xs { margin-bottom: 4px; }
+.mb-sm { margin-bottom: 8px; }
+.mb-md { margin-bottom: 16px; }
+.mb-lg { margin-bottom: 24px; }
+.mb-xl { margin-bottom: 32px; }
+
+.mt-xs { margin-top: 4px; }
+.mt-sm { margin-top: 8px; }
+.mt-md { margin-top: 16px; }
+.mt-lg { margin-top: 24px; }
+
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+.text-muted { color: var(--ink-soft); }
+.text-bold { font-weight: 700; }
+.text-serif { font-family: var(--font-serif); }
+
+/* SVG Icon Primitive */
+.icon {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
+  stroke: currentColor;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+  vertical-align: middle;
+}
+
+.icon-sm { width: 18px; height: 18px; }
+.icon-lg { width: 32px; height: 32px; }
+.icon-hero { width: 44px; height: 44px; }

@@ -51,6 +51,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     logoutBtn.addEventListener('click', () => auth.handleLogout());
   }
 
+  const logoutSidebarBtn = document.getElementById('btn-logout-sidebar');
+  if (logoutSidebarBtn) {
+    logoutSidebarBtn.addEventListener('click', () => auth.handleLogout());
+  }
+
+  // Mobile Bottom Sheet "More" Button
+  const moreMobileBtn = document.getElementById('tab-btn-more-m');
+  if (moreMobileBtn) {
+    moreMobileBtn.addEventListener('click', () => ui.openModal('sheet-more'));
+  }
+
+  // Quick Action Assistant Shortcut
+  const quickAssistantBtn = document.getElementById('quick-action-assistant');
+  if (quickAssistantBtn) {
+    quickAssistantBtn.addEventListener('click', () => app.toggleChat(true));
+  }
+
   // 7. Accessible Nav Tab switching & WAI-ARIA arrow navigation
   const tabs = Array.from(document.querySelectorAll('.nav-tab'));
   tabs.forEach((tab, index) => {
