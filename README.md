@@ -2,9 +2,10 @@
 > **Collaborative Elderly Care & Medication Management Platform**  
 > *Smarter, accessible, proactive, and dignified — keeping the senior at the center of every care decision.*
 
-[![Tests](https://img.shields.io/badge/tests-71%20passed-success)](https://github.com/)
-[![Coverage](https://img.shields.io/badge/coverage-88.3%25-brightgreen)](https://github.com/)
+[![Tests](https://img.shields.io/badge/tests-78%20passed-success)](https://github.com/)
+[![Coverage](https://img.shields.io/badge/coverage-88.2%25-brightgreen)](https://github.com/)
 [![WCAG 2.1 AA](https://img.shields.io/badge/accessibility-WCAG%202.1%20AA-blue)](https://www.w3.org/WAI/WCAG21/quickref/)
+[![CI](https://github.com/vyomvarshney2005cseai/CareCircle/actions/workflows/ci.yml/badge.svg)](https://github.com/vyomvarshney2005cseai/CareCircle/actions)
 [![Google Cloud Run](https://img.shields.io/badge/deployed-Google%20Cloud%20Run-4285F4)](https://carecircle-471887193815.asia-south1.run.app)
 [![Google Gemini API](https://img.shields.io/badge/AI-Google%20Gemini%202.5%20Flash-orange)](https://ai.google.dev/)
 
@@ -20,7 +21,8 @@
 | **Proactive email reminders (upcoming, missed, escalation)** | `src/services/notificationService.js`, `src/services/mailer/index.js`, `src/routes/taskRoutes.js` (`POST /tasks/run-reminders`) | **YES** | Cloud Scheduler 5-min cron; upcoming dose at 15m; missed dose at 30m; escalation alert to caretakers at 60m; 24h & 2h appointment reminders; atomic pre-claim idempotency. |
 | **Beyond basic reminder: smart AI capabilities** | `src/services/aiService.js`, `src/routes/aiRoutes.js` (`/api/ai/scan-prescription`, `/assistant`, `/interaction-check`, `/adherence-insight`) | **YES** | Gemini multimodal prescription scanner with magic byte validation & editable review; structured conversational assistant with explicit confirmation; safety interaction checks; kind adherence insights. |
 | **Elder stays at center of decisions (approval workflow & audit log)** | `src/services/pendingChangeService.js`, `src/services/auditService.js`, `src/routes/pendingChangeRoutes.js` (`/pending-changes`, `/audit`) | **YES** | `requireElderApprovalForEdits` setting intercepts caretaker med/appointment edits into a pending review queue; only elder can approve or reject; full audit log. |
-| **Senior-first WCAG 2.1 AA accessibility** | `public/index.html`, `public/css/tokens.css`, `public/js/ui.js`, `public/js/speech.js` | **YES** | $\ge 20\text{px}$ base font, A/A+/A++ controls, $\ge 4.5:1$ AA contrast verified, high contrast mode ($\ge 7:1$), simplified Elder mode, Web Speech read aloud & voice mic. |
+| **Senior-first WCAG 2.1 AA accessibility** | `public/index.html`, `public/css/tokens.css`, `public/js/ui.js`, `public/js/speech.js` | **YES** | $\ge 20\text{px}$ base font, A/A+/A++ controls, $\ge 4.5:1$ AA contrast verified, high contrast mode ($\ge 7:1$), simplified Elder mode, Web Speech read aloud & voice mic, WAI-ARIA arrow-key tabs, focus-trapped delete modal, and table alternative for screen readers. |
+| **Automated Testing & CI Workflow** | `.github/workflows/ci.yml`, `tests/` | **YES** | 78 tests across 19 test suites passing (100% pass rate); 88.2% code coverage; automated GitHub Actions CI pipeline running lint, unit, and integration checks on every push. |
 | **Cloud Run deployment & container readiness** | `Dockerfile`, `deploy.sh`, `src/server.js`, `src/app.js` (`GET /api/healthz`, `GET /healthz`) | **YES** | Multi-stage slim container, non-root user, health check endpoint, graceful SIGTERM shutdown, deployed to asia-south1. |
 
 ---
