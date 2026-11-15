@@ -872,7 +872,6 @@ window.app = {
       const isSelf = m.id === auth.user.id;
       const isElder = auth.user.role === 'elder';
       const safeName = ui.escapeHtml(m.name);
-      const safeRole = ui.escapeHtml(m.role);
       const safeEmail = ui.escapeHtml(m.email);
       const initials = safeName.split(' ').map((n) => n[0]).join('').slice(0, 2).toUpperCase() || 'M';
 
@@ -1057,7 +1056,7 @@ window.app = {
   // ==========================================================================
 
   // --- 1. Adherence Insights ---
-  async loadAdherenceInsight(profileId) {
+  async loadAdherenceInsight(_profileId) {
     const box = document.getElementById('ai-insight-box');
     const textEl = document.getElementById('ai-insight-text');
     const tipEl = document.getElementById('ai-insight-tip');
