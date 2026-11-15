@@ -52,6 +52,10 @@ if (!parsed.success) {
   throw new Error('Invalid application configuration');
 }
 
+if (parsed.data.env === 'production' && !process.env.JWT_SECRET) {
+  console.warn('[SECURITY WARNING] Running in production without custom JWT_SECRET. Using fallback key. Set JWT_SECRET in production environment variables.');
+}
+
 /**
  * Application configuration loaded exclusively from environment variables.
  */
